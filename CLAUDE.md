@@ -42,6 +42,21 @@ calorias, micronutrientes, pontuações de bem-estar e peso. **Sem IA, sem chave
 - `core/momentos.py` — `MOMENTOS` (peq-almoço/almoço/lanche/jantar/ceia/snack), `emoji()`,
   `sugerir(hora)`. Refeições têm coluna `momento` (db); registo/painel/histórico usam-na
   (painel agrupa refeições por momento). Foto opcional via `db.guardar_refeicao(foto_bytes=)`.
+- `core/exercicios.py` — catálogo de atividades (MET) + `kcal(met, peso, min)`. Tabela `exercicios`
+  no db; o `db.exercicio_kcal_do_dia` soma ao alvo de calorias no painel e nas metas (alvos_aj).
+- `core/suplementos.py` — `CATALOGO` (ómega-3, proteína, multivit, etc.) + `nutrientes_de(nomes)`.
+  Rotina do utilizador em `perfis.suplementos` (JSON); `db.totais_do_dia` soma-os nos dias
+  ativos/hoje. `db.guardar_preferencias(uid, restricoes, alergias, suplementos)`; `obter_perfil`
+  devolve essas 3 como listas. NÃO mexer nelas no `guardar_perfil` (senão o registo de peso apaga-as).
+- `core/dieta.py` — alergias/preferências por palavras-chave do nome; `compativel(food, alergias, prefs)`.
+  Pratos compostos com carne (francesinha, lasanha…) estão na lista `_CARNE` por nome.
+- `core/sugestoes.py` — `para_carencia` e `para_agora` (filtram por `dieta.compativel`).
+  Usado em Carências e Painel.
+- `core/doenca.py` + tabela `estado_saude` (PK uid+data): modo doente. `db.definir_estado`/
+  `obter_estado`. Dia doente NÃO quebra a streak (em `metas.sequencia_atual`). Painel mostra
+  conforto alimentar por tipo, com AVISO de que não é conselho médico.
+- `metas`/`carencias` contam "dias com registos" por `db.tem_refeicoes` (não por kcal),
+  para os suplementos não criarem dias-fantasma.
 - `core/openfoodfacts.py` — pesquisa OFF por nome (`/cgi/search.pl`) e código de barras
   (`/api/v2/product`), via `urllib` (sem dependência extra). `_MAPA` converte unidades
   OFF (g) → nossas (mg ×1000, µg ×1e6). Região (pt/br/world) na definição `off_pais`.
