@@ -97,6 +97,34 @@ def pesquisar(termo: str, pais: str = "pt", limite: int = 25) -> list[dict]:
     return resultados
 
 
+def enriquecer(prod: dict) -> tuple[dict, str | None]:
+    """Estima vitaminas/minerais em falta a partir do alimento mais parecido da
+    tabela local. Só preenche campos a 0; devolve (produto, nome_do_alimento_usado)."""
+    from core import foods
+
+    tokens = set(nutrients.normalizar(prod["nome"]).split())
+    melhor, melhor_score = None, 0
+    for alimento in foods.ALIMENTOS:
+        score = len(tokens & set(nutrients.normalizar(alimento["nome"]).split()))
+        if score > melhor_score:
+            melhor, melhor_score = alimento, score
+    if not melhor or melhor_score < 1:
+        return prod, None
+
+    por_100g = dict(prod["por_100g"])
+    micros = list(nutrients.DDR) + ["fibra_g"]
+    preenchidos = 0
+    for chave in micros:
+        if por_100g.get(chave, 0) == 0 and melhor["por_100g"].get(chave, 0) > 0:
+            por_100g[chave] = melhor["por_100g"][chave]
+            preenchidos += 1
+    if preenchidos == 0:
+        return prod, None
+    novo = dict(prod)
+    novo["por_100g"] = por_100g
+    return novo, melhor["nome"]
+
+
 def por_codigo(codigo: str, pais: str = "pt") -> dict:
     """Procura um produto pelo código de barras."""
     url = (f"https://{_dominio(pais)}/api/v2/product/{urllib.parse.quote(codigo)}"

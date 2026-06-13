@@ -2,23 +2,29 @@
 from core import nutrients
 
 PREFERENCIAS = ["Vegetariano", "Vegano", "Pescetariano", "Sem carne vermelha"]
-ALERGIAS = ["Glúten", "Lactose", "Ovo", "Peixe", "Marisco",
-            "Frutos de casca rija", "Soja", "Amendoim"]
+ALERGIAS = ["Glúten", "Lactose", "Ovo", "Peixe", "Marisco", "Frutos de casca rija",
+            "Amendoim", "Soja", "Frutos vermelhos", "Mostarda", "Sésamo", "Aipo"]
 
 # palavras (sem acentos) que indicam o alergénio no nome do alimento
 _ALERGIA_KW = {
     "Glúten": ["pao", "tosta", "massa", "bolacha", "bolo", "croissant", "broa", "francesinha",
                "lasanha", "esparguete", "rissol", "croquete", "pizza", "berlim", "queijada",
-               "tarte", "cereais", "aletria", "migas", "acorda", "sonhos", "bola de bolacha"],
+               "tarte", "cereais", "aletria", "migas", "acorda", "sonhos", "bola de bolacha",
+               "bechamel", "panado", "empada"],
     "Lactose": ["leite", "queijo", "iogurte", "requeijao", "manteiga", "natas", "leite-creme",
-                "gelado", "com natas", "pudim", "mousse", "tosta mista", "arroz doce"],
+                "gelado", "com natas", "pudim", "mousse", "tosta mista", "arroz doce", "kefir",
+                "bechamel", "mozzarella", "parmesao", "philadelphia", "serra"],
     "Ovo": ["ovo", "omelete", "pudim", "mousse", "pastel de nata", "queijada", "rissol",
-            "croquete", "sonhos", "leite-creme"],
+            "croquete", "sonhos", "leite-creme", "maionese", "panado"],
     "Peixe": ["bacalhau", "salmao", "atum", "sardinha", "peixe", "caldeirada", "pataniscas"],
     "Marisco": ["camarao", "marisco", "polvo"],
-    "Frutos de casca rija": ["amendoa", "noz", "nozes"],
-    "Soja": ["soja", "tofu"],
+    "Frutos de casca rija": ["amendoa", "noz", "nozes", "pesto"],
     "Amendoim": ["amendoim"],
+    "Soja": ["soja", "tofu"],
+    "Frutos vermelhos": ["morango", "framboesa", "mirtilo", "amora", "frutos vermelhos"],
+    "Mostarda": ["mostarda"],
+    "Sésamo": ["sesamo", "tahini"],
+    "Aipo": ["aipo"],
 }
 
 # palavras que tornam um alimento incompatível com uma preferência

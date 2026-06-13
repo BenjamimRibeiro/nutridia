@@ -41,19 +41,17 @@ def totais(cesto: list) -> dict:
 
 
 def adicionar_alimento(cesto: list, prefixo: str, pais: str, uid=None) -> None:
-    """Separadores para escolher um alimento (recentes/comuns/OFF) e juntar ao cesto."""
+    """Separadores para escolher um alimento (comuns/OFF/recentes) e juntar ao cesto."""
     recentes = db.alimentos_recentes(uid) if uid is not None else []
-    etiquetas = (["🕘 Recentes"] if recentes else []) + ["🍎 Alimentos", "🔍 Pesquisar produto"]
+    etiquetas = ["🍎 Alimentos", "🔍 Pesquisar produto"] + (["🕘 Recentes"] if recentes else [])
     tabs = st.tabs(etiquetas)
-    base = 0
-    if recentes:
-        with tabs[0]:
-            _aba_recentes(cesto, prefixo, recentes)
-        base = 1
-    with tabs[base]:
+    with tabs[0]:
         _aba_comuns(cesto, prefixo, uid)
-    with tabs[base + 1]:
+    with tabs[1]:
         _aba_off(cesto, prefixo, pais)
+    if recentes:
+        with tabs[2]:
+            _aba_recentes(cesto, prefixo, recentes)
 
 
 def _aba_recentes(cesto: list, prefixo: str, recentes: list) -> None:
@@ -97,28 +95,31 @@ def _aba_comuns(cesto: list, prefixo: str, uid) -> None:
 
 
 def _aba_off(cesto: list, prefixo: str, pais: str) -> None:
-    st.caption(f"Produtos de marca na Open Food Facts ({pais.upper()}). Gratuito, sem chave.")
-    c1, c2 = st.columns([3, 1])
-    termo = c1.text_input("Produto ou marca", key=f"{prefixo}_termo",
-                          label_visibility="collapsed",
-                          placeholder="Ex.: iogurte grego, bolachas belVita…")
-    if c2.button("🔍 Pesquisar", key=f"{prefixo}_btn"):
-        try:
-            with st.spinner("A procurar na Open Food Facts…"):
-                st.session_state[f"{prefixo}_res"] = off.pesquisar(termo, pais)
-        except ValueError as e:
-            st.error(str(e))
-            st.session_state[f"{prefixo}_res"] = []
-
-    with st.expander("📷 Tenho o código de barras"):
-        cb = st.text_input("Código de barras", key=f"{prefixo}_cb",
-                           placeholder="Ex.: 5601234567890")
-        if st.button("Procurar código", key=f"{prefixo}_cbbtn") and cb.strip():
+    st.caption(f"Produtos de marca na Open Food Facts ({pais.upper()}). Gratuito, sem chave. "
+               "Escreve e carrega **Enter** para procurar.")
+    with st.form(f"{prefixo}_off_form"):
+        c1, c2 = st.columns([3, 1])
+        termo = c1.text_input("Produto ou marca", key=f"{prefixo}_termo",
+                              label_visibility="collapsed",
+                              placeholder="Ex.: iogurte grego, bolachas belVita…")
+        if c2.form_submit_button("🔍 Pesquisar", use_container_width=True):
             try:
-                with st.spinner("A procurar…"):
-                    st.session_state[f"{prefixo}_res"] = [off.por_codigo(cb.strip(), pais)]
+                with st.spinner("A procurar na Open Food Facts…"):
+                    st.session_state[f"{prefixo}_res"] = off.pesquisar(termo, pais)
             except ValueError as e:
                 st.error(str(e))
+                st.session_state[f"{prefixo}_res"] = []
+
+    with st.expander("📷 Tenho o código de barras"):
+        with st.form(f"{prefixo}_cb_form"):
+            cb = st.text_input("Código de barras", key=f"{prefixo}_cb",
+                               placeholder="Ex.: 5601234567890")
+            if st.form_submit_button("Procurar código") and cb.strip():
+                try:
+                    with st.spinner("A procurar…"):
+                        st.session_state[f"{prefixo}_res"] = [off.por_codigo(cb.strip(), pais)]
+                except ValueError as e:
+                    st.error(str(e))
 
     res = st.session_state.get(f"{prefixo}_res")
     if res:
@@ -129,9 +130,16 @@ def _aba_off(cesto: list, prefixo: str, pais: str) -> None:
             st.caption(f"Embalagem: {prod['quantidade']}")
         micros = sum(1 for c in _MICROS if prod["por_100g"].get(c, 0) > 0)
         if micros < 5:
-            st.warning(f"⚠️ Este produto só tem **{micros} de {len(_MICROS)}** "
-                       "vitaminas/minerais registados na Open Food Facts. Os que faltam "
-                       "contam como 0 — as pontuações e carências podem ficar subestimadas.")
+            enriquecido, fonte = off.enriquecer(prod)
+            if fonte:
+                prod = enriquecido
+                st.info(f"ℹ️ A Open Food Facts não tinha as vitaminas/minerais deste produto — "
+                        f"**estimei** a partir de «{fonte}» (alimento parecido). Valores aproximados; "
+                        "podes corrigir o peso/escolher outro produto.")
+            else:
+                st.warning(f"⚠️ Este produto só tem **{micros} de {len(_MICROS)}** "
+                           "vitaminas/minerais na Open Food Facts. Os que faltam contam como 0 "
+                           "— as pontuações e carências podem ficar subestimadas.")
         gramas = st.number_input("Peso consumido (g/ml)", 1.0, 2000.0, 100.0, step=10.0,
                                  key=f"{prefixo}_g")
         st.caption(f"➡️ {gramas:.0f} g · {_resumo(nutrients.escalar(prod['por_100g'], gramas))}")
