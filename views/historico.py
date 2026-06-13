@@ -4,7 +4,7 @@ from datetime import date, timedelta
 import pandas as pd
 import streamlit as st
 
-from core import calc, db, momentos, nutrients
+from core import calc, db, i18n, momentos, nutrients
 from views import builder, tema
 
 _CAMPOS_SIMPLES = ["kcal", "proteina_g", "hidratos_g", "gordura_g", "fibra_g", "acucar_g"]
@@ -63,8 +63,9 @@ def _editor_refeicao(ref: dict, pais: str, sexo: str | None, alvos: dict | None,
 
 
 def mostrar():
-    tema.cabecalho("📅", "Histórico",
-                   "Vê, corrige e acompanha a tua evolução ao longo do tempo")
+    tema.cabecalho("📅", i18n.t("Histórico", "History"),
+                   i18n.t("Vê, corrige e acompanha a tua evolução ao longo do tempo",
+                          "See, edit and track your progress over time"))
 
     uid = st.session_state.get("uid")
     perfil = db.obter_perfil(uid)

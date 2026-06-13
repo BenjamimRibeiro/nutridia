@@ -1,7 +1,7 @@
 """Os meus alimentos — criar alimentos próprios e receitas reutilizáveis."""
 import streamlit as st
 
-from core import calc, db, nutrients
+from core import calc, db, i18n, nutrients
 from views import builder, components, tema
 
 _MACROS = [("kcal", "Calorias", "kcal"), ("proteina_g", "Proteína", "g"),
@@ -10,8 +10,9 @@ _MACROS = [("kcal", "Calorias", "kcal"), ("proteina_g", "Proteína", "g"),
 
 
 def mostrar():
-    tema.cabecalho("🥣", "Os meus alimentos",
-                   "Cria os teus próprios alimentos e receitas para usar nas refeições")
+    tema.cabecalho("🥣", i18n.t("Os meus alimentos", "My foods"),
+                   i18n.t("Cria os teus próprios alimentos e receitas para usar nas refeições",
+                          "Create your own foods and recipes to use in meals"))
 
     uid = st.session_state.get("uid")
     perfil = db.obter_perfil(uid)

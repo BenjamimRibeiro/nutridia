@@ -4,7 +4,7 @@ from datetime import date, timedelta
 
 import streamlit as st
 
-from core import calc, db, dieta, foods, nutrients
+from core import calc, db, dieta, foods, i18n, nutrients
 from views import tema
 
 
@@ -47,8 +47,9 @@ def _sugestoes(em_falta: list, medias: dict, alergias: list, preferencias: list)
 
 
 def mostrar():
-    tema.cabecalho("🔬", "Carências e sintomas",
-                   "O que pode faltar na tua semana — e o que comer para repor")
+    tema.cabecalho("🔬", i18n.t("Carências e sintomas", "Deficiencies & symptoms"),
+                   i18n.t("O que pode faltar na tua semana — e o que comer para repor",
+                          "What might be missing this week — and what to eat to top it up"))
 
     uid = st.session_state.get("uid")
     perfil = db.obter_perfil(uid)

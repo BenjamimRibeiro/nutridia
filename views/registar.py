@@ -4,7 +4,7 @@ from datetime import datetime
 
 import streamlit as st
 
-from core import calc, db, momentos, nutrients
+from core import calc, db, i18n, momentos, nutrients
 from views import builder, components, tema
 
 
@@ -15,8 +15,9 @@ def _carregar(cesto: list, itens: list) -> None:
 
 
 def mostrar():
-    tema.cabecalho("🍽️", "Registar refeição",
-                   "Escolhe os alimentos e a porção — a app trata das calorias e nutrientes")
+    tema.cabecalho("🍽️", i18n.t("Registar refeição", "Log a meal"),
+                   i18n.t("Escolhe os alimentos e a porção — a app trata das calorias e nutrientes",
+                          "Pick the foods and portion — the app handles calories and nutrients"))
 
     uid = st.session_state.get("uid")
     cesto = st.session_state.setdefault("cesto", [])

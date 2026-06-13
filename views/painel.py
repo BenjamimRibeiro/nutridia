@@ -5,7 +5,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from core import (calc, db, doenca, exercicios, metas, momentos, nutrients, scores,
+from core import (calc, db, doenca, exercicios, i18n, metas, momentos, nutrients, scores,
                   sugestoes)
 from views import components, tema
 
@@ -80,7 +80,9 @@ def _evolucao_pontuacoes(uid, alvos: dict, sexo: str) -> None:
 
 
 def mostrar():
-    tema.cabecalho("📊", "O teu dia", "Calorias, nutrientes e bem-estar de hoje num relance")
+    tema.cabecalho("📊", i18n.t("O teu dia", "Your day"),
+                   i18n.t("Calorias, nutrientes e bem-estar de hoje num relance",
+                          "Today's calories, nutrients and wellbeing at a glance"))
 
     uid = st.session_state.get("uid")
     perfil = db.obter_perfil(uid)

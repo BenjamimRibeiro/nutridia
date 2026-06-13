@@ -1,13 +1,14 @@
 """Perfil — dados pessoais, peso-alvo e cálculo das necessidades diárias."""
 import streamlit as st
 
-from core import calc, db, dieta, nutrients, sol, suplementos
+from core import calc, db, dieta, i18n, nutrients, sol, suplementos
 from views import tema
 
 
 def mostrar():
-    tema.cabecalho("👤", "O teu perfil",
-                   "Os teus dados definem as calorias de manutenção e os alvos do objetivo")
+    tema.cabecalho("👤", i18n.t("O teu perfil", "Your profile"),
+                   i18n.t("Os teus dados definem as calorias de manutenção e os alvos do objetivo",
+                          "Your data sets your maintenance calories and goal targets"))
 
     uid = st.session_state.get("uid")
     perfil = db.obter_perfil(uid) or {}

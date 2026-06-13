@@ -3,12 +3,14 @@ from datetime import date
 
 import streamlit as st
 
-from core import calc, db, metas, nutrients, scores
+from core import calc, db, i18n, metas, nutrients, scores
 from views import tema
 
 
 def mostrar():
-    tema.cabecalho("🎯", "Progresso", "As tuas sequências, medalhas e o caminho até ao peso-alvo")
+    tema.cabecalho("🎯", i18n.t("Progresso", "Progress"),
+                   i18n.t("As tuas sequências, medalhas e o caminho até ao peso-alvo",
+                          "Your streaks, medals and the path to your target weight"))
 
     uid = st.session_state.get("uid")
     perfil = db.obter_perfil(uid)
