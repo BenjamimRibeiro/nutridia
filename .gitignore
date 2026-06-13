@@ -1,0 +1,16 @@
+# Dados pessoais — NUNCA enviar para o GitHub
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Segredos (palavras-passe, ligação à base de dados)
+.streamlit/secrets.toml
+
+# Ambiente virtual e binários
+.venv/
+cloudflared.exe
+
+# Cache Python
+__pycache__/
+*.pyc

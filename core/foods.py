@@ -1,0 +1,233 @@
+"""Tabela local de alimentos comuns (valores aproximados por 100 g/ml) com
+porções típicas — para registar refeições sem precisar de saber os nutrientes.
+
+Valores baseados em tabelas de composição de alimentos (INSA/USDA), arredondados.
+Cada porção é (etiqueta, gramas). Onde um nutriente não é fonte relevante, fica 0.
+"""
+from core.nutrients import CAMPOS_NUTRIENTES
+
+
+def _f(nome: str, categoria: str, porcoes: list[tuple[str, int]], **nutrientes) -> dict:
+    base = {k: 0.0 for k in CAMPOS_NUTRIENTES}
+    base.update(nutrientes)
+    return {"nome": nome, "categoria": categoria, "porcoes": porcoes, "por_100g": base}
+
+
+# Ordem em que as categorias aparecem na app
+CATEGORIAS = [
+    "Pão e cereais", "Proteínas", "Lacticínios", "Leguminosas",
+    "Fruta", "Vegetais", "Gorduras e frutos secos", "Doces e snacks", "Bebidas",
+]
+
+ALIMENTOS = [
+    # ---------- Pão e cereais ----------
+    _f("Pão de forma branco", "Pão e cereais", [("1 fatia", 28), ("2 fatias", 56)],
+       kcal=265, proteina_g=9, hidratos_g=49, gordura_g=3.2, gordura_saturada_g=0.7,
+       fibra_g=2.7, acucar_g=5, sodio_mg=490, ferro_mg=3.6, magnesio_mg=25, calcio_mg=150,
+       vit_b1_mg=0.5, vit_b3_mg=4, folato_ug=130),
+    _f("Pão integral", "Pão e cereais", [("1 fatia", 32), ("2 fatias", 64)],
+       kcal=247, proteina_g=13, hidratos_g=41, gordura_g=3.4, gordura_saturada_g=0.7,
+       fibra_g=7, acucar_g=6, sodio_mg=450, ferro_mg=2.5, magnesio_mg=76, potassio_mg=250,
+       zinco_mg=1.8, vit_b1_mg=0.4, vit_b3_mg=5, folato_ug=50),
+    _f("Pão (papo-seco/carcaça)", "Pão e cereais", [("1 papo-seco", 50)],
+       kcal=270, proteina_g=9, hidratos_g=53, gordura_g=1.5, fibra_g=3, sodio_mg=500,
+       ferro_mg=2.5, magnesio_mg=30, vit_b1_mg=0.3, vit_b3_mg=3.5, folato_ug=90),
+    _f("Tosta / pão torrado", "Pão e cereais", [("1 tosta", 15)],
+       kcal=410, proteina_g=12, hidratos_g=72, gordura_g=7, fibra_g=5, sodio_mg=600, ferro_mg=3),
+    _f("Arroz branco cozido", "Pão e cereais", [("1 concha", 90), ("Prato", 180)],
+       kcal=130, proteina_g=2.7, hidratos_g=28, gordura_g=0.3, fibra_g=0.4, sodio_mg=1,
+       magnesio_mg=12, potassio_mg=35, agua_ml=68),
+    _f("Massa cozida", "Pão e cereais", [("Acompanhamento", 120), ("Prato", 200)],
+       kcal=158, proteina_g=5.8, hidratos_g=31, gordura_g=0.9, fibra_g=1.8, sodio_mg=1,
+       magnesio_mg=18, ferro_mg=1.3, folato_ug=18, agua_ml=62),
+    _f("Aveia (flocos)", "Pão e cereais", [("3 colheres de sopa", 30), ("Taça", 50)],
+       kcal=389, proteina_g=17, hidratos_g=66, gordura_g=7, gordura_saturada_g=1.2, fibra_g=10,
+       acucar_g=1, magnesio_mg=177, ferro_mg=4.7, zinco_mg=4, potassio_mg=429, vit_b1_mg=0.76),
+    _f("Cereais de pequeno-almoço (flocos de milho)", "Pão e cereais", [("Taça", 40)],
+       kcal=378, proteina_g=7, hidratos_g=84, gordura_g=0.9, fibra_g=3, acucar_g=8, sodio_mg=520,
+       ferro_mg=8, vit_b1_mg=1, vit_b2_mg=1.3, vit_b3_mg=15, vit_b6_mg=1.8, folato_ug=200, vit_b12_ug=2),
+    _f("Batata cozida", "Pão e cereais", [("1 batata média", 150), ("Porção", 200)],
+       kcal=87, proteina_g=1.9, hidratos_g=20, gordura_g=0.1, fibra_g=1.8, sodio_mg=4,
+       potassio_mg=379, vit_c_mg=13, vit_b6_mg=0.3, magnesio_mg=22, agua_ml=77),
+    _f("Batata frita (caseira)", "Pão e cereais", [("Porção", 150)],
+       kcal=312, proteina_g=3.4, hidratos_g=41, gordura_g=15, gordura_saturada_g=2.3, fibra_g=3.8,
+       sodio_mg=210, potassio_mg=580, vit_c_mg=9),
+
+    # ---------- Proteínas ----------
+    _f("Ovo", "Proteínas", [("1 ovo M", 55), ("1 ovo L", 65), ("2 ovos", 120)],
+       kcal=143, proteina_g=13, hidratos_g=1.1, gordura_g=9.5, gordura_saturada_g=3.1, sodio_mg=142,
+       calcio_mg=56, ferro_mg=1.8, zinco_mg=1.3, vit_a_ug=160, vit_d_ug=2, vit_e_mg=1,
+       vit_b2_mg=0.46, vit_b12_ug=1.1, folato_ug=47),
+    _f("Peito de frango grelhado", "Proteínas", [("1 peito pequeno", 120), ("Bife", 150)],
+       kcal=165, proteina_g=31, gordura_g=3.6, gordura_saturada_g=1, sodio_mg=74, potassio_mg=256,
+       magnesio_mg=29, zinco_mg=1, vit_b3_mg=13, vit_b6_mg=0.6, vit_b12_ug=0.3),
+    _f("Bife de vaca", "Proteínas", [("Bife", 150)],
+       kcal=217, proteina_g=26, gordura_g=12, gordura_saturada_g=5, sodio_mg=55, ferro_mg=2.6,
+       zinco_mg=4.8, vit_b12_ug=2.6, vit_b3_mg=5, potassio_mg=330),
+    _f("Carne de porco (lombo)", "Proteínas", [("Bife", 130)],
+       kcal=242, proteina_g=27, gordura_g=14, gordura_saturada_g=5, sodio_mg=62, ferro_mg=0.9,
+       zinco_mg=2, vit_b1_mg=0.9, vit_b6_mg=0.5, vit_b12_ug=0.7),
+    _f("Hambúrguer de vaca", "Proteínas", [("1 hambúrguer", 100), ("1 hambúrguer grande", 150)],
+       kcal=254, proteina_g=26, gordura_g=17, gordura_saturada_g=6.5, sodio_mg=75, ferro_mg=2.7,
+       zinco_mg=6.2, potassio_mg=318, vit_b3_mg=5, vit_b6_mg=0.36, vit_b12_ug=2.6),
+    _f("Hambúrguer de porco", "Proteínas", [("1 hambúrguer", 100), ("1 hambúrguer grande", 150)],
+       kcal=297, proteina_g=25, gordura_g=21, gordura_saturada_g=7.8, sodio_mg=62, ferro_mg=1.2,
+       zinco_mg=2.9, potassio_mg=362, vit_b1_mg=0.7, vit_b6_mg=0.4, vit_b12_ug=0.8),
+    _f("Salmão", "Proteínas", [("Posta", 130)],
+       kcal=208, proteina_g=20, gordura_g=13, gordura_saturada_g=3, omega3_g=2.3, sodio_mg=59,
+       potassio_mg=363, vit_d_ug=11, vit_b12_ug=3.2, vit_b3_mg=8, magnesio_mg=27),
+    _f("Atum em água (lata)", "Proteínas", [("1 lata escorrida", 80)],
+       kcal=116, proteina_g=26, gordura_g=1, sodio_mg=320, potassio_mg=237, vit_d_ug=2,
+       vit_b12_ug=2.5, vit_b3_mg=13, magnesio_mg=30, omega3_g=0.3),
+    _f("Bacalhau cozido", "Proteínas", [("Posta", 150)],
+       kcal=105, proteina_g=23, gordura_g=0.9, sodio_mg=320, potassio_mg=200, vit_b12_ug=1,
+       magnesio_mg=30, omega3_g=0.2),
+    _f("Sardinha", "Proteínas", [("3 sardinhas", 120)],
+       kcal=208, proteina_g=25, gordura_g=11, gordura_saturada_g=1.5, omega3_g=1.5, calcio_mg=380,
+       ferro_mg=2.9, vit_d_ug=4.8, vit_b12_ug=8.9, sodio_mg=307),
+    _f("Camarão", "Proteínas", [("Porção", 100)],
+       kcal=99, proteina_g=24, gordura_g=0.3, sodio_mg=111, calcio_mg=70, ferro_mg=0.5,
+       zinco_mg=1.6, vit_b12_ug=1.1),
+    _f("Fiambre de frango", "Proteínas", [("1 fatia", 20), ("2 fatias", 40)],
+       kcal=110, proteina_g=18, gordura_g=3.5, gordura_saturada_g=1, sodio_mg=950, ferro_mg=0.8),
+
+    # ---------- Lacticínios ----------
+    _f("Leite meio-gordo", "Lacticínios", [("1 copo", 200), ("Chávena", 250)],
+       kcal=47, proteina_g=3.3, hidratos_g=4.8, gordura_g=1.6, gordura_saturada_g=1, acucar_g=4.8,
+       calcio_mg=120, potassio_mg=150, vit_b2_mg=0.18, vit_b12_ug=0.5, vit_d_ug=1.1, agua_ml=89),
+    _f("Iogurte natural", "Lacticínios", [("1 iogurte", 125)],
+       kcal=61, proteina_g=3.5, hidratos_g=4.7, gordura_g=3.3, gordura_saturada_g=2, acucar_g=4.7,
+       calcio_mg=110, vit_b2_mg=0.14, vit_b12_ug=0.4, potassio_mg=155, agua_ml=88),
+    _f("Queijo flamengo", "Lacticínios", [("1 fatia", 20)],
+       kcal=350, proteina_g=25, gordura_g=27, gordura_saturada_g=17, sodio_mg=700, calcio_mg=720,
+       vit_a_ug=250, vit_b12_ug=1.5, zinco_mg=3),
+    _f("Requeijão", "Lacticínios", [("Porção", 100)],
+       kcal=145, proteina_g=11, gordura_g=10, gordura_saturada_g=6, calcio_mg=90, sodio_mg=30, vit_a_ug=120),
+
+    # ---------- Leguminosas ----------
+    _f("Feijão cozido", "Leguminosas", [("Concha", 90), ("Porção", 130)],
+       kcal=127, proteina_g=8.7, hidratos_g=22, gordura_g=0.5, fibra_g=6.4, sodio_mg=1, ferro_mg=2.9,
+       magnesio_mg=45, potassio_mg=405, folato_ug=130, zinco_mg=1, agua_ml=63),
+    _f("Grão-de-bico cozido", "Leguminosas", [("Concha", 90), ("Porção", 130)],
+       kcal=164, proteina_g=8.9, hidratos_g=27, gordura_g=2.6, fibra_g=7.6, ferro_mg=2.9,
+       magnesio_mg=48, potassio_mg=291, folato_ug=172, zinco_mg=1.5),
+    _f("Lentilhas cozidas", "Leguminosas", [("Concha", 90), ("Porção", 130)],
+       kcal=116, proteina_g=9, hidratos_g=20, gordura_g=0.4, fibra_g=7.9, ferro_mg=3.3,
+       magnesio_mg=36, potassio_mg=369, folato_ug=181, zinco_mg=1.3),
+
+    # ---------- Fruta ----------
+    _f("Banana", "Fruta", [("1 banana", 120)],
+       kcal=89, proteina_g=1.1, hidratos_g=23, gordura_g=0.3, fibra_g=2.6, acucar_g=12,
+       potassio_mg=358, magnesio_mg=27, vit_c_mg=8.7, vit_b6_mg=0.37, folato_ug=20, agua_ml=75),
+    _f("Maçã", "Fruta", [("1 maçã", 150)],
+       kcal=52, proteina_g=0.3, hidratos_g=14, fibra_g=2.4, acucar_g=10, potassio_mg=107,
+       vit_c_mg=4.6, agua_ml=86),
+    _f("Laranja", "Fruta", [("1 laranja", 130)],
+       kcal=47, proteina_g=0.9, hidratos_g=12, fibra_g=2.4, acucar_g=9, vit_c_mg=53,
+       potassio_mg=181, calcio_mg=40, folato_ug=30, agua_ml=87),
+    _f("Pera", "Fruta", [("1 pera", 150)],
+       kcal=57, proteina_g=0.4, hidratos_g=15, fibra_g=3.1, acucar_g=10, potassio_mg=116,
+       vit_c_mg=4.3, agua_ml=84),
+    _f("Morangos", "Fruta", [("1 taça", 150)],
+       kcal=32, proteina_g=0.7, hidratos_g=7.7, fibra_g=2, acucar_g=4.9, vit_c_mg=59,
+       potassio_mg=153, folato_ug=24, agua_ml=91),
+    _f("Uvas", "Fruta", [("1 cacho pequeno", 100)],
+       kcal=69, proteina_g=0.7, hidratos_g=18, fibra_g=0.9, acucar_g=16, potassio_mg=191,
+       vit_k_ug=14.6, agua_ml=81),
+    _f("Kiwi", "Fruta", [("1 kiwi", 75)],
+       kcal=61, proteina_g=1.1, hidratos_g=15, fibra_g=3, acucar_g=9, vit_c_mg=93, vit_k_ug=40,
+       potassio_mg=312, agua_ml=83),
+    _f("Melancia", "Fruta", [("1 fatia", 200)],
+       kcal=30, proteina_g=0.6, hidratos_g=8, fibra_g=0.4, acucar_g=6, vit_c_mg=8, vit_a_ug=28,
+       potassio_mg=112, agua_ml=91),
+
+    # ---------- Vegetais ----------
+    _f("Brócolos cozidos", "Vegetais", [("Porção", 100)],
+       kcal=35, proteina_g=2.4, hidratos_g=7, fibra_g=3.3, vit_c_mg=65, vit_k_ug=141, folato_ug=108,
+       potassio_mg=293, calcio_mg=40, vit_a_ug=77, agua_ml=89),
+    _f("Espinafres cozidos", "Vegetais", [("Porção", 100)],
+       kcal=23, proteina_g=3, hidratos_g=3.8, fibra_g=2.4, ferro_mg=3.6, magnesio_mg=87,
+       potassio_mg=466, folato_ug=146, vit_a_ug=524, vit_k_ug=494, vit_c_mg=9.8, calcio_mg=136, agua_ml=91),
+    _f("Cenoura", "Vegetais", [("1 cenoura", 80), ("Porção ralada", 60)],
+       kcal=41, proteina_g=0.9, hidratos_g=10, fibra_g=2.8, acucar_g=4.7, vit_a_ug=835, vit_k_ug=13,
+       potassio_mg=320, vit_c_mg=5.9, agua_ml=88),
+    _f("Alface", "Vegetais", [("Porção", 50)],
+       kcal=15, proteina_g=1.4, hidratos_g=2.9, fibra_g=1.3, vit_a_ug=370, vit_k_ug=126,
+       folato_ug=38, potassio_mg=194, agua_ml=95),
+    _f("Tomate", "Vegetais", [("1 tomate", 120)],
+       kcal=18, proteina_g=0.9, hidratos_g=3.9, fibra_g=1.2, acucar_g=2.6, vit_c_mg=14, vit_a_ug=42,
+       vit_k_ug=7.9, potassio_mg=237, agua_ml=94),
+    _f("Couve cozida", "Vegetais", [("Porção", 100)],
+       kcal=28, proteina_g=1.9, hidratos_g=5, fibra_g=2, vit_c_mg=35, vit_k_ug=400, folato_ug=60,
+       calcio_mg=70, agua_ml=90),
+    _f("Sopa de legumes", "Vegetais", [("1 prato", 300)],
+       kcal=45, proteina_g=1.5, hidratos_g=7, gordura_g=1.5, fibra_g=2, potassio_mg=200, vit_a_ug=200,
+       vit_c_mg=10, sodio_mg=300, agua_ml=88),
+
+    # ---------- Gorduras e frutos secos ----------
+    _f("Azeite", "Gorduras e frutos secos", [("1 fio", 7), ("1 colher de sopa", 14)],
+       kcal=884, gordura_g=100, gordura_saturada_g=14, vit_e_mg=14, vit_k_ug=60),
+    _f("Manteiga", "Gorduras e frutos secos", [("1 porção", 10)],
+       kcal=717, proteina_g=0.9, gordura_g=81, gordura_saturada_g=51, sodio_mg=11, vit_a_ug=684, vit_d_ug=1.5),
+    _f("Amêndoas", "Gorduras e frutos secos", [("Mão-cheia", 30)],
+       kcal=579, proteina_g=21, hidratos_g=22, gordura_g=50, gordura_saturada_g=3.8, fibra_g=12.5,
+       magnesio_mg=270, calcio_mg=269, ferro_mg=3.7, zinco_mg=3.1, vit_e_mg=25.6, potassio_mg=733),
+    _f("Nozes", "Gorduras e frutos secos", [("Mão-cheia", 30)],
+       kcal=654, proteina_g=15, hidratos_g=14, gordura_g=65, gordura_saturada_g=6, fibra_g=6.7,
+       omega3_g=9, magnesio_mg=158, potassio_mg=441, zinco_mg=3),
+    _f("Abacate", "Gorduras e frutos secos", [("Meio abacate", 100)],
+       kcal=160, proteina_g=2, hidratos_g=9, gordura_g=15, gordura_saturada_g=2.1, fibra_g=6.7,
+       potassio_mg=485, magnesio_mg=29, vit_e_mg=2.1, vit_k_ug=21, folato_ug=81, agua_ml=73),
+
+    # ---------- Doces e snacks ----------
+    _f("Bolo de chocolate", "Doces e snacks", [("1 fatia", 80)],
+       kcal=371, proteina_g=5, hidratos_g=50, gordura_g=17, gordura_saturada_g=6, acucar_g=35,
+       sodio_mg=320, ferro_mg=1.5, potassio_mg=180),
+    _f("Chocolate de leite", "Doces e snacks", [("1 quadrado", 8), ("Meia tablete", 50)],
+       kcal=535, proteina_g=7.6, hidratos_g=59, gordura_g=30, gordura_saturada_g=18, acucar_g=52,
+       calcio_mg=189, magnesio_mg=63, ferro_mg=2.3),
+    _f("Bolacha Maria", "Doces e snacks", [("2 bolachas", 16), ("4 bolachas", 32)],
+       kcal=436, proteina_g=7, hidratos_g=75, gordura_g=11, gordura_saturada_g=4.5, acucar_g=22,
+       sodio_mg=350, ferro_mg=2),
+    _f("Batatas fritas de pacote", "Doces e snacks", [("Saco pequeno", 30)],
+       kcal=536, proteina_g=6.6, hidratos_g=53, gordura_g=35, gordura_saturada_g=3.5, fibra_g=4.4,
+       sodio_mg=525, potassio_mg=1000, vit_c_mg=31),
+    _f("Croissant", "Doces e snacks", [("1 croissant", 60)],
+       kcal=406, proteina_g=8, hidratos_g=46, gordura_g=21, gordura_saturada_g=12, acucar_g=11,
+       sodio_mg=420, ferro_mg=2.3),
+    _f("Pizza (queijo)", "Doces e snacks", [("1 fatia", 100)],
+       kcal=266, proteina_g=11, hidratos_g=33, gordura_g=10, gordura_saturada_g=4.5, sodio_mg=600,
+       calcio_mg=188, ferro_mg=2.5, potassio_mg=184),
+    _f("Arroz doce", "Doces e snacks", [("Taça", 120)],
+       kcal=150, proteina_g=3, hidratos_g=27, gordura_g=3, gordura_saturada_g=1.7, acucar_g=17,
+       calcio_mg=90, agua_ml=60),
+    _f("Mel", "Doces e snacks", [("1 colher de chá", 7), ("1 colher de sopa", 21)],
+       kcal=304, hidratos_g=82, acucar_g=82, potassio_mg=52, calcio_mg=6, ferro_mg=0.42,
+       magnesio_mg=2, vit_c_mg=0.5, agua_ml=17),
+
+    # ---------- Bebidas ----------
+    _f("Café expresso", "Bebidas", [("1 café (30 ml)", 30)],
+       kcal=2, proteina_g=0.1, cafeina_mg=212, potassio_mg=115, agua_ml=97),
+    _f("Café com leite", "Bebidas", [("1 chávena", 150)],
+       kcal=30, proteina_g=1.6, gordura_g=1.2, calcio_mg=60, cafeina_mg=40, agua_ml=90),
+    _f("Sumo de laranja natural", "Bebidas", [("1 copo", 200)],
+       kcal=45, proteina_g=0.7, hidratos_g=10, acucar_g=8, vit_c_mg=50, potassio_mg=200,
+       folato_ug=30, agua_ml=88),
+    _f("Refrigerante (cola)", "Bebidas", [("1 lata", 330)],
+       kcal=42, hidratos_g=10.6, acucar_g=10.6, sodio_mg=4, cafeina_mg=10, agua_ml=89),
+    _f("Vinho tinto", "Bebidas", [("1 copo", 150)],
+       kcal=85, hidratos_g=2.6, acucar_g=0.6, potassio_mg=127, agua_ml=86),
+    _f("Cerveja", "Bebidas", [("1 imperial", 200), ("1 caneca", 330)],
+       kcal=43, proteina_g=0.5, hidratos_g=3.6, potassio_mg=27, agua_ml=92),
+    _f("Água", "Bebidas", [("1 copo", 200), ("1 garrafa", 500)],
+       kcal=0, agua_ml=100),
+]
+
+
+def categorias() -> list[str]:
+    presentes = {a["categoria"] for a in ALIMENTOS}
+    return [c for c in CATEGORIAS if c in presentes]
+
+
+def por_categoria(categoria: str) -> list[dict]:
+    return [a for a in ALIMENTOS if a["categoria"] == categoria]

@@ -1,0 +1,78 @@
+"""Metas, sequências (streaks) e medalhas — calculadas a partir dos registos."""
+from datetime import date, timedelta
+
+from core import db, nutrients
+
+
+def dia_dentro_alvo(totais: dict, alvos: dict) -> bool:
+    """Um dia conta como 'dentro do alvo' se teve registos e as calorias ficaram
+    entre 80% e 110% do alvo."""
+    kcal = totais.get("kcal", 0)
+    if kcal <= 0:
+        return False
+    return 0.80 * alvos["kcal"] <= kcal <= 1.10 * alvos["kcal"]
+
+
+def sequencia_atual(uid, alvos: dict) -> int:
+    """Dias seguidos dentro do alvo, a contar a partir de hoje (ou ontem, se hoje
+    ainda não houver registos)."""
+    hoje = date.today()
+    inicio = 0
+    if not db.totais_do_dia(uid, hoje.strftime("%Y-%m-%d")).get("kcal", 0):
+        inicio = 1  # ainda não comeste hoje: a sequência mantém-se a partir de ontem
+    seguidos = 0
+    for i in range(inicio, 365):
+        dia = (hoje - timedelta(days=i)).strftime("%Y-%m-%d")
+        if dia_dentro_alvo(db.totais_do_dia(uid, dia), alvos):
+            seguidos += 1
+        else:
+            break
+    return seguidos
+
+
+def _medias_n_dias(uid, n: int) -> tuple[dict, int]:
+    somas: dict[str, float] = {}
+    dias = 0
+    for i in range(n):
+        dia = (date.today() - timedelta(days=i)).strftime("%Y-%m-%d")
+        totais = db.totais_do_dia(uid, dia)
+        if totais.get("kcal", 0) > 0:
+            dias += 1
+            for k, v in totais.items():
+                somas[k] = somas.get(k, 0) + v
+    return ({k: v / dias for k, v in somas.items()} if dias else {}), dias
+
+
+def medalhas(uid, perfil: dict, alvos: dict) -> list[dict]:
+    """Lista de medalhas com estado (conquistada ou não)."""
+    seq = sequencia_atual(uid, alvos)
+    medias7, dias7 = _medias_n_dias(uid, 7)
+    sexo = perfil["sexo"]
+
+    # dias da última semana com a água em dia
+    dias_agua = sum(
+        1 for i in range(7)
+        if db.agua_do_dia(uid, (date.today() - timedelta(days=i)).strftime("%Y-%m-%d"))
+        >= alvos["agua_ml"])
+
+    # nutrientes (com DDR) em dia, em média, na última semana
+    micros_ok = 0
+    if dias7:
+        for chave in nutrients.DDR:
+            alvo = nutrients.alvo_nutriente(chave, sexo, alvos)
+            if alvo and medias7.get(chave, 0) >= alvo:
+                micros_ok += 1
+
+    return [
+        {"emoji": "🔥", "nome": "Em chamas", "desc": "3 dias seguidos dentro do alvo",
+         "conquistada": seq >= 3, "progresso": f"{min(seq, 3)}/3 dias"},
+        {"emoji": "🏆", "nome": "Semana perfeita", "desc": "7 dias seguidos dentro do alvo",
+         "conquistada": seq >= 7, "progresso": f"{min(seq, 7)}/7 dias"},
+        {"emoji": "💪", "nome": "Semana proteica", "desc": "Média de proteína na meta (7 dias)",
+         "conquistada": dias7 >= 3 and medias7.get("proteina_g", 0) >= alvos["proteina_g"],
+         "progresso": f"{medias7.get('proteina_g', 0):.0f}/{alvos['proteina_g']} g" if dias7 else "sem dados"},
+        {"emoji": "💧", "nome": "Hidratado", "desc": "Água em dia em 5 dos últimos 7 dias",
+         "conquistada": dias_agua >= 5, "progresso": f"{dias_agua}/7 dias"},
+        {"emoji": "🌈", "nome": "Arco-íris", "desc": "≥12 vitaminas/minerais na meta (média 7 dias)",
+         "conquistada": micros_ok >= 12, "progresso": f"{micros_ok}/{len(nutrients.DDR)}"},
+    ]
