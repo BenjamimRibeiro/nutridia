@@ -5,7 +5,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from core import calc, db, metas, nutrients, scores
+from core import calc, db, metas, momentos, nutrients, scores
 from views import components, tema
 
 
@@ -158,13 +158,23 @@ def mostrar():
         with st.expander("📋 Ver tabela detalhada"):
             components.tabela_cobertura(totais, perfil["sexo"], alvos)
 
-    # ---- Refeições de hoje ----
+    # ---- Refeições de hoje (agrupadas por momento) ----
     st.subheader(f"Refeições de hoje ({len(refeicoes)})")
     if not refeicoes:
         st.caption("Ainda não registaste nada hoje.")
     else:
         st.caption("✏️ Para corrigir quantidades ou apagar, vai ao **Histórico**.")
-    for ref in refeicoes:
-        n = ref["nutrientes"]
-        st.markdown(f"**{ref['hora']}** — {ref['nome']} · "
-                    f"{n.get('kcal', 0):.0f} kcal · {n.get('proteina_g', 0):.0f} g proteína")
+        por_momento: dict[str, list] = {}
+        for ref in refeicoes:
+            por_momento.setdefault(ref.get("momento") or "Outras", []).append(ref)
+        for momento in momentos.MOMENTOS + ["Outras"]:
+            refs = por_momento.get(momento)
+            if not refs:
+                continue
+            kcal_m = sum(r["nutrientes"].get("kcal", 0) for r in refs)
+            st.markdown(f"**{momentos.emoji(momento)} {momento}** — {kcal_m:.0f} kcal")
+            for ref in refs:
+                n = ref["nutrientes"]
+                st.markdown(f"&nbsp;&nbsp;&nbsp;{ref['hora']} · {ref['nome']} · "
+                            f"{n.get('kcal', 0):.0f} kcal · {n.get('proteina_g', 0):.0f} g prot",
+                            unsafe_allow_html=True)

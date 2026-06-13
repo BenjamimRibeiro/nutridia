@@ -4,7 +4,7 @@ from datetime import date, timedelta
 import pandas as pd
 import streamlit as st
 
-from core import calc, db, nutrients
+from core import calc, db, momentos, nutrients
 from views import builder, tema
 
 _CAMPOS_SIMPLES = ["kcal", "proteina_g", "hidratos_g", "gordura_g", "fibra_g", "acucar_g"]
@@ -19,7 +19,12 @@ def _editor_refeicao(ref: dict, pais: str, sexo: str | None, alvos: dict | None,
         st.session_state[chave] = [dict(i) for i in (ref.get("itens") or [])]
     cesto = st.session_state[chave]
 
-    novo_nome = st.text_input("Nome da refeição", ref["nome"], key=f"en_{rid}")
+    cn, cm = st.columns([2, 1])
+    novo_nome = cn.text_input("Nome da refeição", ref["nome"], key=f"en_{rid}")
+    mom_atual = ref.get("momento")
+    novo_momento = cm.selectbox(
+        "Momento", momentos.MOMENTOS, key=f"em_{rid}",
+        index=momentos.MOMENTOS.index(mom_atual) if mom_atual in momentos.MOMENTOS else 0)
 
     if not ref.get("itens"):
         st.info("Esta refeição antiga não tinha lista de alimentos. Adiciona os alimentos "
@@ -39,14 +44,15 @@ def _editor_refeicao(ref: dict, pais: str, sexo: str | None, alvos: dict | None,
     if col1.button("💾 Guardar alterações", key=f"sv_{rid}", type="primary"):
         if cesto:
             db.atualizar_refeicao(rid, novo_nome.strip() or ref["nome"],
-                                  builder.totais(cesto), list(cesto))
+                                  builder.totais(cesto), list(cesto), momento=novo_momento)
         elif ref.get("itens"):
             st.warning("A refeição ficaria sem alimentos. Adiciona pelo menos um, "
                        "ou apaga a refeição.")
             return
         else:
             # refeição antiga sem itens e sem alterações de alimentos: só renomeia
-            db.atualizar_refeicao(rid, novo_nome.strip() or ref["nome"], ref["nutrientes"])
+            db.atualizar_refeicao(rid, novo_nome.strip() or ref["nome"], ref["nutrientes"],
+                                  momento=novo_momento)
         st.session_state.pop(chave, None)
         st.session_state.pop(f"e{rid}_res", None)
         st.success("Refeição atualizada!")
@@ -76,7 +82,9 @@ def mostrar():
         st.caption("Sem refeições registadas neste dia.")
     for ref in refeicoes:
         n = ref["nutrientes"]
-        with st.expander(f"{ref['hora']} — {ref['nome']} ({n.get('kcal', 0):.0f} kcal)"):
+        mom = ref.get("momento")
+        prefixo = f"{momentos.emoji(mom)} {mom} · " if mom else ""
+        with st.expander(f"{prefixo}{ref['hora']} — {ref['nome']} ({n.get('kcal', 0):.0f} kcal)"):
             if ref["foto_path"]:
                 try:
                     st.image(ref["foto_path"], width=300)

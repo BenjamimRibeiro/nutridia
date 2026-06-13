@@ -45,7 +45,7 @@ refeicoes = Table(
     Column("hora", String(5), nullable=False), Column("nome", String(200), nullable=False),
     Column("descricao", Text), Column("foto_path", Text),
     Column("nutrientes", Text, nullable=False), Column("criado_em", String(40), nullable=False),
-    Column("itens", Text),
+    Column("itens", Text), Column("momento", String(30)),
 )
 agua = Table(
     "agua", metadata,
@@ -103,14 +103,17 @@ def reset_engine() -> None:
 
 
 def _migrar(engine) -> None:
-    """Adiciona as colunas de autenticação a bases de dados antigas."""
-    cols = {c["name"] for c in inspect(engine).get_columns("utilizadores")}
-    novas = [("username", "VARCHAR(120)"), ("pass_hash", "VARCHAR(255)"),
-             ("pass_salt", "VARCHAR(64)")]
+    """Adiciona colunas novas a bases de dados antigas (auth e momento)."""
+    insp = inspect(engine)
+    cols_u = {c["name"] for c in insp.get_columns("utilizadores")}
+    cols_r = {c["name"] for c in insp.get_columns("refeicoes")}
     with engine.begin() as con:
-        for coluna, tipo in novas:
-            if coluna not in cols:
+        for coluna, tipo in [("username", "VARCHAR(120)"), ("pass_hash", "VARCHAR(255)"),
+                             ("pass_salt", "VARCHAR(64)")]:
+            if coluna not in cols_u:
                 con.execute(text(f"ALTER TABLE utilizadores ADD COLUMN {coluna} {tipo}"))
+        if "momento" not in cols_r:
+            con.execute(text("ALTER TABLE refeicoes ADD COLUMN momento VARCHAR(30)"))
 
 
 def inicializar() -> None:
@@ -195,7 +198,7 @@ def obter_perfil(uid) -> dict | None:
 
 def guardar_refeicao(uid, nome: str, nutrientes: dict, descricao: str = "",
                      foto_bytes: bytes | None = None, dia: str | None = None,
-                     itens: list[dict] | None = None) -> int:
+                     itens: list[dict] | None = None, momento: str | None = None) -> int:
     agora = datetime.now()
     dia = dia or agora.strftime("%Y-%m-%d")
     foto_path = None
@@ -208,16 +211,18 @@ def guardar_refeicao(uid, nome: str, nutrientes: dict, descricao: str = "",
             utilizador_id=uid, data=dia, hora=agora.strftime("%H:%M"), nome=nome,
             descricao=descricao, foto_path=foto_path,
             nutrientes=json.dumps(nutrientes, ensure_ascii=False), criado_em=agora.isoformat(),
-            itens=json.dumps(itens, ensure_ascii=False) if itens else None))
+            itens=json.dumps(itens, ensure_ascii=False) if itens else None, momento=momento))
         return res.inserted_primary_key[0]
 
 
 def atualizar_refeicao(refeicao_id: int, nome: str, nutrientes: dict,
-                       itens: list[dict] | None = None) -> None:
+                       itens: list[dict] | None = None, momento: str | None = None) -> None:
+    valores = dict(nome=nome, nutrientes=json.dumps(nutrientes, ensure_ascii=False),
+                   itens=json.dumps(itens, ensure_ascii=False) if itens else None)
+    if momento is not None:
+        valores["momento"] = momento
     with _engine().begin() as con:
-        con.execute(update(refeicoes).where(refeicoes.c.id == refeicao_id).values(
-            nome=nome, nutrientes=json.dumps(nutrientes, ensure_ascii=False),
-            itens=json.dumps(itens, ensure_ascii=False) if itens else None))
+        con.execute(update(refeicoes).where(refeicoes.c.id == refeicao_id).values(**valores))
 
 
 def refeicoes_do_dia(uid, dia: str) -> list[dict]:

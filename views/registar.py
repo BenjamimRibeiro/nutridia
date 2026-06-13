@@ -4,7 +4,7 @@ from datetime import datetime
 
 import streamlit as st
 
-from core import calc, db, nutrients
+from core import calc, db, momentos, nutrients
 from views import builder, components, tema
 
 
@@ -86,12 +86,26 @@ def mostrar():
         st.caption("Preenche o Perfil para veres a % dos teus alvos diários.")
 
     nome_sugerido = ", ".join(i["nome"].split(" — ")[0] for i in cesto[:3])
-    nome = st.text_input("Nome da refeição", nome_sugerido)
+    cn, cm = st.columns([2, 1])
+    nome = cn.text_input("Nome da refeição", nome_sugerido)
+    momento = cm.selectbox("Momento do dia", momentos.MOMENTOS,
+                           index=momentos.MOMENTOS.index(momentos.sugerir()))
+
+    foto_bytes = None
+    with st.expander("📷 Adicionar foto (opcional)"):
+        foto = st.file_uploader("Foto da refeição", type=["jpg", "jpeg", "png", "webp"],
+                                key="reg_foto", label_visibility="collapsed")
+        if foto:
+            foto_bytes = foto.getvalue()
+            st.image(foto_bytes, width=220)
+
     c1, c2 = st.columns(2)
     if c1.button("💾 Guardar refeição", type="primary", use_container_width=True):
-        db.guardar_refeicao(uid, nome.strip() or "Refeição", totais, itens=list(cesto))
+        db.guardar_refeicao(uid, nome.strip() or "Refeição", totais, itens=list(cesto),
+                            momento=momento, foto_bytes=foto_bytes)
         st.session_state["cesto"] = []
         st.session_state.pop("reg_res", None)
+        st.session_state.pop("reg_foto", None)
         st.success(f"✅ «{nome}» guardada! Vê o impacto no Painel.")
         st.balloons()
         st.rerun()
