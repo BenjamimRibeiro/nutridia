@@ -74,6 +74,12 @@ favoritos = Table(
     Column("utilizador_id", Integer, nullable=False), Column("nome", String(200), nullable=False),
     Column("itens", Text, nullable=False), Column("criado_em", String(40), nullable=False),
 )
+suplementos_custom = Table(
+    "suplementos_custom", metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("utilizador_id", Integer, nullable=False), Column("nome", String(120), nullable=False),
+    Column("nutrientes", Text, nullable=False), Column("criado_em", String(40), nullable=False),
+)
 exercicios = Table(
     "exercicios", metadata,
     Column("id", Integer, primary_key=True, autoincrement=True),
@@ -228,9 +234,39 @@ def guardar_preferencias(uid, restricoes: list, alergias: list, suplementos: lis
             sol_habitual=sol_habitual))
 
 
+def criar_suplemento(uid, nome: str, nutrientes: dict) -> int:
+    with _engine().begin() as con:
+        res = con.execute(insert(suplementos_custom).values(
+            utilizador_id=uid, nome=nome, nutrientes=json.dumps(nutrientes, ensure_ascii=False),
+            criado_em=datetime.now().isoformat()))
+        return res.inserted_primary_key[0]
+
+
+def listar_suplementos_custom(uid) -> list[dict]:
+    with _engine().connect() as con:
+        linhas = con.execute(select(suplementos_custom).where(
+            suplementos_custom.c.utilizador_id == uid).order_by(suplementos_custom.c.nome)).mappings().all()
+    return [{"id": l["id"], "nome": l["nome"], "nutrientes": json.loads(l["nutrientes"])}
+            for l in linhas]
+
+
+def apagar_suplemento(sup_id: int) -> None:
+    with _engine().begin() as con:
+        con.execute(delete(suplementos_custom).where(suplementos_custom.c.id == sup_id))
+
+
 def suplementos_nutrientes(uid) -> dict:
+    """Soma os nutrientes da rotina de suplementos (do catálogo + próprios)."""
     perfil = obter_perfil(uid)
-    return _sup.nutrientes_de(perfil.get("suplementos", [])) if perfil else {}
+    nomes = perfil.get("suplementos", []) if perfil else []
+    custom = {c["nome"]: c["nutrientes"] for c in listar_suplementos_custom(uid)}
+    total: dict[str, float] = {}
+    for nome in nomes:
+        fonte = _sup.CATALOGO.get(nome) or custom.get(nome)
+        if fonte:
+            for chave, valor in fonte.items():
+                total[chave] = total.get(chave, 0) + valor
+    return total
 
 
 # ---------- Refeições ----------

@@ -1,9 +1,26 @@
 """Alergias e preferências alimentares — compatibilidade de alimentos por palavras-chave."""
-from core import nutrients
+from core import i18n, nutrients
 
 PREFERENCIAS = ["Vegetariano", "Vegano", "Pescetariano", "Sem carne vermelha"]
-ALERGIAS = ["Glúten", "Lactose", "Ovo", "Peixe", "Marisco", "Frutos de casca rija",
-            "Amendoim", "Soja", "Frutos vermelhos", "Mostarda", "Sésamo", "Aipo"]
+ALERGIAS = sorted(["Glúten", "Lactose", "Ovo", "Peixe", "Marisco", "Frutos de casca rija",
+                   "Amendoim", "Soja", "Frutos vermelhos", "Mostarda", "Sésamo", "Aipo"],
+                  key=nutrients.normalizar)
+
+_ALERGIA_EN = {
+    "Glúten": "Gluten", "Lactose": "Lactose", "Ovo": "Egg", "Peixe": "Fish", "Marisco": "Shellfish",
+    "Frutos de casca rija": "Tree nuts", "Amendoim": "Peanut", "Soja": "Soy",
+    "Frutos vermelhos": "Berries", "Mostarda": "Mustard", "Sésamo": "Sesame", "Aipo": "Celery",
+}
+_PREF_EN = {"Vegetariano": "Vegetarian", "Vegano": "Vegan", "Pescetariano": "Pescatarian",
+            "Sem carne vermelha": "No red meat"}
+
+
+def nome_alergia(a: str) -> str:
+    return _ALERGIA_EN.get(a, a) if i18n.idioma() == "en" else a
+
+
+def nome_preferencia(p: str) -> str:
+    return _PREF_EN.get(p, p) if i18n.idioma() == "en" else p
 
 # palavras (sem acentos) que indicam o alergénio no nome do alimento
 _ALERGIA_KW = {

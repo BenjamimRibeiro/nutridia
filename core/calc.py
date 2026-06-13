@@ -11,6 +11,26 @@ FATORES_ATIVIDADE = {
 
 OBJETIVOS = ["Manter peso", "Emagrecer", "Engordar / ganhar massa"]
 
+_ATIVIDADE_EN = {
+    "Sedentário (pouco ou nenhum exercício)": "Sedentary (little or no exercise)",
+    "Leve (exercício 1-3x/semana)": "Light (exercise 1-3x/week)",
+    "Moderado (exercício 3-5x/semana)": "Moderate (exercise 3-5x/week)",
+    "Intenso (exercício 6-7x/semana)": "Intense (exercise 6-7x/week)",
+    "Atleta (2 treinos/dia ou trabalho físico)": "Athlete (2 workouts/day or physical job)",
+}
+_OBJETIVO_EN = {"Manter peso": "Maintain weight", "Emagrecer": "Lose weight",
+                "Engordar / ganhar massa": "Gain weight / muscle"}
+
+
+def nome_atividade(a: str) -> str:
+    from core import i18n
+    return _ATIVIDADE_EN.get(a, a) if i18n.idioma() == "en" else a
+
+
+def nome_objetivo(o: str) -> str:
+    from core import i18n
+    return _OBJETIVO_EN.get(o, o) if i18n.idioma() == "en" else o
+
 KCAL_POR_KG = 7700  # défice/excedente necessário para variar 1 kg de gordura
 
 

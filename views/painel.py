@@ -5,7 +5,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from core import (calc, db, doenca, exercicios, i18n, metas, momentos, nutrients, scores,
+from core import (calc, db, doenca, exercicios, foods, i18n, metas, momentos, nutrients, scores,
                   sugestoes)
 from views import components, tema
 
@@ -196,13 +196,13 @@ def mostrar():
                                    "varied options that give you what's still missing today:"))
                     for s in sug["saudaveis"]:
                         ajuda = ", ".join(nutrients.nome_de(c) for c, _ in s["cobre"][:3])
-                        st.markdown(f"- 🥗 **{s['nome']}** ({s['rotulo']}, {s['gramas']} g) → "
+                        st.markdown(f"- 🥗 **{foods.nome(s['nome'])}** ({s['rotulo']}, {s['gramas']} g) → "
                                     + _t("bom para", "good for") + f" **{ajuda}** · {s['kcal']:.0f} kcal")
                 if sug["treat"]:
                     tr = sug["treat"]
                     st.markdown(_t("😋 E se te apetecer algo bom (sabe sempre bem de vez em quando!): ",
                                    "😋 And if you fancy a treat (always nice now and then!): ")
-                                + f"**{tr['nome']}** ({tr['rotulo']}, {tr['gramas']} g) · {tr['kcal']:.0f} kcal")
+                                + f"**{foods.nome(tr['nome'])}** ({tr['rotulo']}, {tr['gramas']} g) · {tr['kcal']:.0f} kcal")
                 st.caption(_t("Sugestões que respeitam as tuas alergias e preferências (Perfil).",
                               "Suggestions that respect your allergies and preferences (Profile)."))
 

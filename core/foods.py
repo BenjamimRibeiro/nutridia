@@ -20,6 +20,59 @@ def categoria_nome(cat: str) -> str:
     return _CAT_EN.get(cat, cat) if i18n.idioma() == "en" else cat
 
 
+# Tradução de nomes GENÉRICOS (pratos/sobremesas tipicamente PT ficam sem entrada → PT)
+_NOMES_EN = {
+    "Pão de forma branco": "White sliced bread", "Pão integral": "Wholegrain bread",
+    "Pão (papo-seco/carcaça)": "Bread roll", "Tosta / pão torrado": "Toast",
+    "Arroz branco cozido": "White rice (cooked)", "Massa cozida": "Pasta (cooked)",
+    "Aveia (flocos)": "Oats", "Cereais de pequeno-almoço (flocos de milho)": "Breakfast cereal",
+    "Batata cozida": "Boiled potato", "Batata frita (caseira)": "Fries (homemade)",
+    "Broa de milho": "Corn bread", "Tosta mista": "Ham & cheese toastie",
+    "Ovo": "Egg", "Peito de frango grelhado": "Grilled chicken breast", "Bife de vaca": "Beef steak",
+    "Carne de porco (lombo)": "Pork loin", "Salmão": "Salmon", "Atum em água (lata)": "Canned tuna",
+    "Bacalhau cozido": "Cod (boiled)", "Sardinha": "Sardines", "Camarão": "Shrimp",
+    "Fiambre de frango": "Chicken ham", "Hambúrguer de vaca": "Beef burger",
+    "Hambúrguer de porco": "Pork burger",
+    "Leite meio-gordo": "Semi-skimmed milk", "Iogurte natural": "Plain yogurt",
+    "Queijo de cabra": "Goat cheese", "Queijo fresco": "Fresh cheese", "Queijo mozzarella": "Mozzarella",
+    "Queijo parmesão (ralado)": "Parmesan (grated)", "Queijo creme (tipo Philadelphia)": "Cream cheese",
+    "Iogurte grego": "Greek yogurt", "Iogurte magro": "Low-fat yogurt", "Kefir": "Kefir",
+    "Leite gordo": "Whole milk", "Leite magro": "Skimmed milk", "Bebida de aveia": "Oat drink",
+    "Natas (para cozinhar)": "Cooking cream", "Queijo de cabra ": "Goat cheese",
+    "Feijão cozido": "Beans (cooked)", "Grão-de-bico cozido": "Chickpeas (cooked)",
+    "Lentilhas cozidas": "Lentils (cooked)",
+    "Banana": "Banana", "Maçã": "Apple", "Laranja": "Orange", "Pera": "Pear",
+    "Morangos": "Strawberries", "Uvas": "Grapes", "Kiwi": "Kiwi", "Melancia": "Watermelon",
+    "Brócolos cozidos": "Broccoli (cooked)", "Espinafres cozidos": "Spinach (cooked)",
+    "Cenoura": "Carrot", "Alface": "Lettuce", "Tomate": "Tomato", "Couve cozida": "Cabbage (cooked)",
+    "Sopa de legumes": "Vegetable soup", "Cebola": "Onion", "Alho": "Garlic", "Pimento": "Bell pepper",
+    "Maionese": "Mayonnaise", "Maionese light": "Light mayonnaise", "Ketchup": "Ketchup",
+    "Mostarda": "Mustard", "Molho barbecue": "Barbecue sauce", "Molho béchamel": "Béchamel sauce",
+    "Molho de soja": "Soy sauce", "Pesto": "Pesto", "Molho de tomate (polpa)": "Tomato sauce",
+    "Vinagre": "Vinegar",
+    "Azeite": "Olive oil", "Manteiga": "Butter", "Amêndoas": "Almonds", "Nozes": "Walnuts",
+    "Abacate": "Avocado",
+    "Creme de legumes": "Vegetable cream soup", "Sopa de abóbora": "Pumpkin soup",
+    "Sopa de feijão verde": "Green bean soup", "Caldeirada de peixe": "Fish stew",
+    "Lasanha": "Lasagna", "Esparguete à bolonhesa": "Spaghetti bolognese",
+    "Caril de frango": "Chicken curry", "Frango assado": "Roast chicken",
+    "Omelete (2 ovos)": "Omelette (2 eggs)",
+    "Chocolate de leite": "Milk chocolate", "Bolacha Maria": "Plain biscuit",
+    "Batatas fritas de pacote": "Crisps", "Croissant": "Croissant", "Pizza (queijo)": "Pizza (cheese)",
+    "Gelado (baunilha)": "Ice cream (vanilla)", "Bolo de chocolate": "Chocolate cake",
+    "Mousse de chocolate": "Chocolate mousse", "Pudim flan": "Crème caramel",
+    "Tarte de maçã": "Apple pie",
+    "Café expresso": "Espresso", "Café com leite": "Coffee with milk",
+    "Sumo de laranja natural": "Fresh orange juice", "Refrigerante (cola)": "Soft drink (cola)",
+    "Vinho tinto": "Red wine", "Cerveja": "Beer", "Água": "Water", "Mel": "Honey",
+}
+
+
+def nome(nome_pt: str) -> str:
+    """Nome do alimento no idioma ativo. Pratos típicos sem tradução ficam em PT."""
+    return _NOMES_EN.get(nome_pt, nome_pt) if i18n.idioma() == "en" else nome_pt
+
+
 def _f(nome: str, categoria: str, porcoes: list[tuple[str, int]], **nutrientes) -> dict:
     base = {k: 0.0 for k in CAMPOS_NUTRIENTES}
     base.update(nutrientes)

@@ -61,7 +61,8 @@ def _aba_recentes(cesto: list, prefixo: str, recentes: list) -> None:
     st.caption(_t("Os teus alimentos mais recentes — com a porção que usaste da última vez.",
                   "Your most recent foods — with the portion you last used."))
     i = st.selectbox(_t("Alimento recente", "Recent food"), range(len(recentes)),
-                     format_func=lambda i: f"{recentes[i]['nome']} ({recentes[i]['gramas']:.0f} g)",
+                     format_func=lambda i: f"{foods.nome(recentes[i]['nome'])} "
+                                           f"({recentes[i]['gramas']:.0f} g)",
                      key=f"{prefixo}_rec_sel")
     r = recentes[i]
     gramas = st.number_input(_t("Peso (g/ml)", "Weight (g/ml)"), 1.0, 2000.0, float(r["gramas"]),
@@ -77,7 +78,7 @@ def _aba_comuns(cesto: list, prefixo: str, uid) -> None:
                        format_func=foods.categoria_nome)
     lista = _alimentos(cat, uid)
     idx = st.selectbox(_t("Alimento", "Food"), range(len(lista)),
-                       format_func=lambda i: lista[i]["nome"], key=f"{prefixo}_al_{cat}")
+                       format_func=lambda i: foods.nome(lista[i]["nome"]), key=f"{prefixo}_al_{cat}")
     alimento = lista[idx]
 
     porcoes = alimento["porcoes"]
@@ -173,12 +174,13 @@ def mostrar_itens(cesto: list, prefixo: str, sexo: str | None = None,
     """Lista os itens do cesto, com detalhe por alimento e botão de remover."""
     for j, item in enumerate(cesto):
         nut = nutrients.escalar(item["por_100g"], item["gramas"])
+        nome_disp = foods.nome(item["nome"])
         c1, c2, c3 = st.columns([5, 1.4, 0.8])
-        c1.markdown(f"**{item['nome']} · {item['gramas']:.0f} g** — "
+        c1.markdown(f"**{nome_disp} · {item['gramas']:.0f} g** — "
                     f"{nut['kcal']:.0f} kcal, {nut['proteina_g']:.0f} g " + _t("proteína", "protein"))
         with c2.popover(_t("🔍 Detalhe", "🔍 Details")):
-            st.markdown(_t(f"**{item['nome']} ({item['gramas']:.0f} g) dá-te:**",
-                           f"**{item['nome']} ({item['gramas']:.0f} g) gives you:**"))
+            st.markdown(_t(f"**{nome_disp} ({item['gramas']:.0f} g) dá-te:**",
+                           f"**{nome_disp} ({item['gramas']:.0f} g) gives you:**"))
             st.markdown(components.lista_nutrientes(nut, sexo, alvos))
         if c3.button("🗑️", key=f"{prefixo}_rm_{j}", help=_t("Remover", "Remove")):
             cesto.pop(j)
