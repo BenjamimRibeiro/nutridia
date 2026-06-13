@@ -36,8 +36,12 @@ calorias, micronutrientes, pontuações de bem-estar e peso. **Sem IA, sem chave
 - `core/nutrients.py` — fonte canónica: `CAMPOS_NUTRIENTES` (27 chaves) e `escalar()`
   (por-100g → porção). `DDR` (doses recomendadas por sexo), `LIMITES` (sódio, açúcar,
   gordura saturada, cafeína) e `CARENCIAS` (sintomas curto/longo prazo + fontes).
-- `core/foods.py` — tabela local de ~60 alimentos comuns PT (valores por 100 g + porções
-  típicas: "1 fatia", "2 ovos", etc.). Helper `_f(...)` preenche os 27 campos a 0.
+- `core/foods.py` — tabela local de ~110 alimentos comuns PT (valores por 100 g + porções
+  típicas). Helper `_f(...)` preenche os 27 campos a 0. Inclui categoria "Sopas e pratos"
+  (pratos/sopas/sobremesas típicos PT) e hambúrgueres em "Proteínas".
+- `core/momentos.py` — `MOMENTOS` (peq-almoço/almoço/lanche/jantar/ceia/snack), `emoji()`,
+  `sugerir(hora)`. Refeições têm coluna `momento` (db); registo/painel/histórico usam-na
+  (painel agrupa refeições por momento). Foto opcional via `db.guardar_refeicao(foto_bytes=)`.
 - `core/openfoodfacts.py` — pesquisa OFF por nome (`/cgi/search.pl`) e código de barras
   (`/api/v2/product`), via `urllib` (sem dependência extra). `_MAPA` converte unidades
   OFF (g) → nossas (mg ×1000, µg ×1e6). Região (pt/br/world) na definição `off_pais`.
