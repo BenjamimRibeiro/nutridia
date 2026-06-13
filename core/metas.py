@@ -4,18 +4,18 @@ from datetime import date, timedelta
 from core import db, nutrients
 
 
-def dia_dentro_alvo(totais: dict, alvos: dict) -> bool:
+def dia_dentro_alvo(totais: dict, alvo_kcal: float) -> bool:
     """Um dia conta como 'dentro do alvo' se teve registos e as calorias ficaram
-    entre 80% e 110% do alvo."""
+    entre 80% e 110% do alvo (já com o exercício somado)."""
     kcal = totais.get("kcal", 0)
     if kcal <= 0:
         return False
-    return 0.80 * alvos["kcal"] <= kcal <= 1.10 * alvos["kcal"]
+    return 0.80 * alvo_kcal <= kcal <= 1.10 * alvo_kcal
 
 
 def sequencia_atual(uid, alvos: dict) -> int:
     """Dias seguidos dentro do alvo, a contar a partir de hoje (ou ontem, se hoje
-    ainda não houver registos)."""
+    ainda não houver registos). O exercício do dia soma ao alvo de calorias."""
     hoje = date.today()
     inicio = 0
     if not db.totais_do_dia(uid, hoje.strftime("%Y-%m-%d")).get("kcal", 0):
@@ -23,7 +23,8 @@ def sequencia_atual(uid, alvos: dict) -> int:
     seguidos = 0
     for i in range(inicio, 365):
         dia = (hoje - timedelta(days=i)).strftime("%Y-%m-%d")
-        if dia_dentro_alvo(db.totais_do_dia(uid, dia), alvos):
+        alvo_kcal = alvos["kcal"] + db.exercicio_kcal_do_dia(uid, dia)
+        if dia_dentro_alvo(db.totais_do_dia(uid, dia), alvo_kcal):
             seguidos += 1
         else:
             break

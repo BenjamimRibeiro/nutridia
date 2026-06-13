@@ -5,7 +5,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from core import calc, db, metas, momentos, nutrients, scores
+from core import calc, db, exercicios, metas, momentos, nutrients, scores
 from views import components, tema
 
 
@@ -55,9 +55,11 @@ def _evolucao_pontuacoes(uid, alvos: dict, sexo: str) -> None:
     linhas = []
     for i in range(6, -1, -1):
         d = date.today() - timedelta(days=i)
-        totais_dia = db.totais_do_dia(uid, d.strftime("%Y-%m-%d"))
+        dia_s = d.strftime("%Y-%m-%d")
+        totais_dia = db.totais_do_dia(uid, dia_s)
         if totais_dia.get("kcal", 0) > 0:
-            valor = scores.calcular(totais_dia, alvos, sexo)[escolha]
+            alvos_d = {**alvos, "kcal": alvos["kcal"] + db.exercicio_kcal_do_dia(uid, dia_s)}
+            valor = scores.calcular(totais_dia, alvos_d, sexo)[escolha]
             linhas.append({"Dia": d.strftime("%d/%m"), "Pontuação": valor,
                            "cor": _cor(valor), "ordem": 6 - i})
     if len(linhas) < 2:
@@ -91,6 +93,11 @@ def mostrar():
     totais = db.totais_do_dia(uid, hoje)
     refeicoes = db.refeicoes_do_dia(uid, hoje)
 
+    # exercício de hoje soma ao alvo de calorias (podes comer mais nos dias que treinas)
+    kcal_ex = db.exercicio_kcal_do_dia(uid, hoje)
+    alvo_kcal = alvos["kcal"] + kcal_ex
+    alvos_aj = {**alvos, "kcal": alvo_kcal}
+
     # ---- Sequência (streak) ----
     seq = metas.sequencia_atual(uid, alvos)
     if seq >= 2:
@@ -102,15 +109,18 @@ def mostrar():
     objetivo_txt = {"Manter peso": "manter", "Emagrecer": "emagrecer",
                     "Engordar / ganhar massa": "ganhar massa"}[perfil["objetivo"]]
     kcal = totais.get("kcal", 0)
-    col_kcal.metric("Calorias", f"{kcal:.0f} / {alvos['kcal']}",
-                    delta=f"{kcal - alvos['kcal']:+.0f} kcal",
+    col_kcal.metric("Calorias", f"{kcal:.0f} / {alvo_kcal}",
+                    delta=f"{kcal - alvo_kcal:+.0f} kcal",
                     delta_color="off",
                     help=f"Alvo para {objetivo_txt}")
     col_prot.metric("Proteína", f"{totais.get('proteina_g', 0):.0f} / {alvos['proteina_g']} g")
     col_hid.metric("Hidratos", f"{totais.get('hidratos_g', 0):.0f} / {alvos['hidratos_g']} g")
     col_gord.metric("Gordura", f"{totais.get('gordura_g', 0):.0f} / {alvos['gordura_g']} g")
+    if kcal_ex:
+        st.caption(f"🏃 Alvo base {alvos['kcal']} + {kcal_ex} kcal de exercício = "
+                   f"**{alvo_kcal} kcal** disponíveis hoje.")
 
-    for chave, alvo in [("kcal", alvos["kcal"]), ("proteina_g", alvos["proteina_g"])]:
+    for chave, alvo in [("kcal", alvo_kcal), ("proteina_g", alvos["proteina_g"])]:
         fracao = min(totais.get(chave, 0) / alvo, 1.0) if alvo else 0
         st.progress(fracao, text=f"{nutrients.nome_de(chave)}: {fracao:.0%} do alvo")
 
@@ -133,12 +143,32 @@ def mostrar():
         db.adicionar_agua(uid, -250)
         st.rerun()
 
+    # ---- Exercício de hoje ----
+    st.subheader("🏃 Exercício de hoje")
+    ca, cb, cc = st.columns([2, 1, 1])
+    atividade = ca.selectbox("Atividade", list(exercicios.ATIVIDADES), key="ex_at")
+    minutos = cb.number_input("Minutos", 1, 600, 30, step=5, key="ex_min")
+    kcal_est = exercicios.kcal(exercicios.ATIVIDADES[atividade], perfil["peso_kg"], minutos)
+    cc.metric("Gasto estimado", f"{kcal_est} kcal")
+    if st.button("➕ Registar exercício", type="primary"):
+        db.registar_exercicio(uid, atividade, minutos, kcal_est)
+        st.rerun()
+    exs = db.exercicios_do_dia(uid, hoje)
+    for e in exs:
+        c1, c2 = st.columns([6, 1])
+        c1.markdown(f"🔥 **{e['nome']}** — {e['duracao_min']} min · {e['kcal']} kcal")
+        if c2.button("🗑️", key=f"exdel_{e['id']}", help="Remover"):
+            db.apagar_exercicio(e["id"])
+            st.rerun()
+    if exs:
+        st.caption(f"Total queimado hoje: **{kcal_ex} kcal** — já somados ao teu alvo de calorias.")
+
     # ---- Pontuações de bem-estar ----
     st.subheader("Pontuações de bem-estar")
     if not refeicoes:
         st.caption("Regista a tua primeira refeição de hoje para veres as pontuações. 🍽️")
     else:
-        pontuacoes = scores.calcular(totais, alvos, perfil["sexo"])
+        pontuacoes = scores.calcular(totais, alvos_aj, perfil["sexo"])
         colunas = st.columns(3)
         for i, (nome, valor) in enumerate(pontuacoes.items()):
             with colunas[i % 3]:
@@ -154,9 +184,9 @@ def mostrar():
     if not refeicoes:
         st.caption("Regista refeições para preencheres estes gráficos.")
     else:
-        components.graficos_cobertura(totais, perfil["sexo"], alvos)
+        components.graficos_cobertura(totais, perfil["sexo"], alvos_aj)
         with st.expander("📋 Ver tabela detalhada"):
-            components.tabela_cobertura(totais, perfil["sexo"], alvos)
+            components.tabela_cobertura(totais, perfil["sexo"], alvos_aj)
 
     # ---- Refeições de hoje (agrupadas por momento) ----
     st.subheader(f"Refeições de hoje ({len(refeicoes)})")

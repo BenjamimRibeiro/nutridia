@@ -104,6 +104,11 @@ def mostrar():
                 db.apagar_refeicao(ref["id"])
                 st.rerun()
 
+    exs = db.exercicios_do_dia(uid, dia_str)
+    if exs:
+        st.markdown("**🏃 Exercício neste dia:** " + " · ".join(
+            f"{e['nome']} ({e['duracao_min']} min, {e['kcal']} kcal)" for e in exs))
+
     # ---- Evolução últimos 14 dias ----
     st.divider()
     st.subheader("Últimos 14 dias")

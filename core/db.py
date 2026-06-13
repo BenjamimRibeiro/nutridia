@@ -72,6 +72,13 @@ favoritos = Table(
     Column("utilizador_id", Integer, nullable=False), Column("nome", String(200), nullable=False),
     Column("itens", Text, nullable=False), Column("criado_em", String(40), nullable=False),
 )
+exercicios = Table(
+    "exercicios", metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("utilizador_id", Integer, nullable=False), Column("data", String(10), nullable=False),
+    Column("nome", String(120), nullable=False), Column("duracao_min", Integer, nullable=False),
+    Column("kcal", Integer, nullable=False), Column("criado_em", String(40), nullable=False),
+)
 definicoes = Table(
     "definicoes", metadata,
     Column("chave", String(80), primary_key=True), Column("valor", Text, nullable=False),
@@ -263,6 +270,50 @@ def dias_com_registos(uid, limite: int = 30) -> list[str]:
         linhas = con.execute(select(refeicoes.c.data).where(refeicoes.c.utilizador_id == uid)
                              .distinct().order_by(refeicoes.c.data.desc()).limit(limite)).all()
     return [l[0] for l in linhas]
+
+
+def alimentos_recentes(uid, limite: int = 15) -> list[dict]:
+    """Alimentos usados recentemente (distintos), com a última porção usada."""
+    with _engine().connect() as con:
+        linhas = con.execute(select(refeicoes.c.itens).where(
+            and_(refeicoes.c.utilizador_id == uid, refeicoes.c.itens.isnot(None)))
+            .order_by(refeicoes.c.criado_em.desc()).limit(80)).all()
+    vistos: dict[str, dict] = {}
+    for (itens_json,) in linhas:
+        for item in json.loads(itens_json):
+            if item["nome"] not in vistos:
+                vistos[item["nome"]] = item
+        if len(vistos) >= limite:
+            break
+    return list(vistos.values())[:limite]
+
+
+# ---------- Exercício ----------
+
+def registar_exercicio(uid, nome: str, duracao_min: int, kcal: int, dia: str | None = None) -> int:
+    dia = dia or date.today().strftime("%Y-%m-%d")
+    with _engine().begin() as con:
+        res = con.execute(insert(exercicios).values(
+            utilizador_id=uid, data=dia, nome=nome, duracao_min=duracao_min, kcal=kcal,
+            criado_em=datetime.now().isoformat()))
+        return res.inserted_primary_key[0]
+
+
+def exercicios_do_dia(uid, dia: str) -> list[dict]:
+    with _engine().connect() as con:
+        linhas = con.execute(select(exercicios).where(
+            and_(exercicios.c.utilizador_id == uid, exercicios.c.data == dia))
+            .order_by(exercicios.c.criado_em)).mappings().all()
+    return [dict(l) for l in linhas]
+
+
+def exercicio_kcal_do_dia(uid, dia: str) -> int:
+    return sum(e["kcal"] for e in exercicios_do_dia(uid, dia))
+
+
+def apagar_exercicio(ex_id: int) -> None:
+    with _engine().begin() as con:
+        con.execute(delete(exercicios).where(exercicios.c.id == ex_id))
 
 
 # ---------- Água ----------

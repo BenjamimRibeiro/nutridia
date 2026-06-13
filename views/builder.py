@@ -41,80 +41,107 @@ def totais(cesto: list) -> dict:
 
 
 def adicionar_alimento(cesto: list, prefixo: str, pais: str, uid=None) -> None:
-    """Separadores para escolher um alimento comum ou pesquisar na OFF e juntar ao cesto."""
-    tab_comuns, tab_off = st.tabs(["🍎 Alimentos", "🔍 Pesquisar produto"])
+    """Separadores para escolher um alimento (recentes/comuns/OFF) e juntar ao cesto."""
+    recentes = db.alimentos_recentes(uid) if uid is not None else []
+    etiquetas = (["🕘 Recentes"] if recentes else []) + ["🍎 Alimentos", "🔍 Pesquisar produto"]
+    tabs = st.tabs(etiquetas)
+    base = 0
+    if recentes:
+        with tabs[0]:
+            _aba_recentes(cesto, prefixo, recentes)
+        base = 1
+    with tabs[base]:
+        _aba_comuns(cesto, prefixo, uid)
+    with tabs[base + 1]:
+        _aba_off(cesto, prefixo, pais)
 
-    with tab_comuns:
-        cat = st.selectbox("Categoria", _categorias(uid), key=f"{prefixo}_cat")
-        lista = _alimentos(cat, uid)
-        idx = st.selectbox("Alimento", range(len(lista)),
-                           format_func=lambda i: lista[i]["nome"], key=f"{prefixo}_al_{cat}")
-        alimento = lista[idx]
 
-        porcoes = alimento["porcoes"]
-        etiquetas = [f"{lbl} ({g} g)" for lbl, g in porcoes] + ["✏️ Peso personalizado"]
-        escolha = st.radio("Porção", etiquetas, horizontal=True, key=f"{prefixo}_po_{cat}_{idx}")
-        if escolha == "✏️ Peso personalizado":
-            gramas = st.number_input("Peso (g/ml)", 1.0, 2000.0, 100.0, step=10.0,
-                                     key=f"{prefixo}_gc_{cat}_{idx}")
-        else:
-            base_g = porcoes[etiquetas.index(escolha)][1]
-            qtd = st.number_input("Quantidade", 1, 20, 1, key=f"{prefixo}_qt_{cat}_{idx}")
-            gramas = base_g * qtd
+def _aba_recentes(cesto: list, prefixo: str, recentes: list) -> None:
+    st.caption("Os teus alimentos mais recentes — com a porção que usaste da última vez.")
+    i = st.selectbox("Alimento recente", range(len(recentes)),
+                     format_func=lambda i: f"{recentes[i]['nome']} ({recentes[i]['gramas']:.0f} g)",
+                     key=f"{prefixo}_rec_sel")
+    r = recentes[i]
+    gramas = st.number_input("Peso (g/ml)", 1.0, 2000.0, float(r["gramas"]), step=10.0,
+                             key=f"{prefixo}_rec_g")
+    st.caption(f"➡️ {gramas:.0f} g · {_resumo(nutrients.escalar(r['por_100g'], gramas))}")
+    if st.button("➕ Adicionar à refeição", key=f"{prefixo}_rec_add", type="primary"):
+        cesto.append({"nome": r["nome"], "gramas": float(gramas), "por_100g": r["por_100g"]})
+        st.rerun()
 
-        nut = nutrients.escalar(alimento["por_100g"], gramas)
-        st.caption(f"➡️ {gramas:.0f} g · {_resumo(nut)}")
-        if st.button("➕ Adicionar à refeição", key=f"{prefixo}_add_comum", type="primary"):
-            cesto.append({"nome": alimento["nome"], "gramas": float(gramas),
-                          "por_100g": alimento["por_100g"]})
-            st.rerun()
 
-    with tab_off:
-        st.caption(f"Produtos de marca na Open Food Facts ({pais.upper()}). Gratuito, sem chave.")
-        c1, c2 = st.columns([3, 1])
-        termo = c1.text_input("Produto ou marca", key=f"{prefixo}_termo",
-                              label_visibility="collapsed",
-                              placeholder="Ex.: iogurte grego, bolachas belVita…")
-        if c2.button("🔍 Pesquisar", key=f"{prefixo}_btn"):
+def _aba_comuns(cesto: list, prefixo: str, uid) -> None:
+    cat = st.selectbox("Categoria", _categorias(uid), key=f"{prefixo}_cat")
+    lista = _alimentos(cat, uid)
+    idx = st.selectbox("Alimento", range(len(lista)),
+                       format_func=lambda i: lista[i]["nome"], key=f"{prefixo}_al_{cat}")
+    alimento = lista[idx]
+
+    porcoes = alimento["porcoes"]
+    etiquetas = [f"{lbl} ({g} g)" for lbl, g in porcoes] + ["✏️ Peso personalizado"]
+    escolha = st.radio("Porção", etiquetas, horizontal=True, key=f"{prefixo}_po_{cat}_{idx}")
+    if escolha == "✏️ Peso personalizado":
+        gramas = st.number_input("Peso (g/ml)", 1.0, 2000.0, 100.0, step=10.0,
+                                 key=f"{prefixo}_gc_{cat}_{idx}")
+    else:
+        base_g = porcoes[etiquetas.index(escolha)][1]
+        qtd = st.number_input("Quantidade", 1, 20, 1, key=f"{prefixo}_qt_{cat}_{idx}")
+        gramas = base_g * qtd
+
+    nut = nutrients.escalar(alimento["por_100g"], gramas)
+    st.caption(f"➡️ {gramas:.0f} g · {_resumo(nut)}")
+    if st.button("➕ Adicionar à refeição", key=f"{prefixo}_add_comum", type="primary"):
+        cesto.append({"nome": alimento["nome"], "gramas": float(gramas),
+                      "por_100g": alimento["por_100g"]})
+        st.rerun()
+
+
+def _aba_off(cesto: list, prefixo: str, pais: str) -> None:
+    st.caption(f"Produtos de marca na Open Food Facts ({pais.upper()}). Gratuito, sem chave.")
+    c1, c2 = st.columns([3, 1])
+    termo = c1.text_input("Produto ou marca", key=f"{prefixo}_termo",
+                          label_visibility="collapsed",
+                          placeholder="Ex.: iogurte grego, bolachas belVita…")
+    if c2.button("🔍 Pesquisar", key=f"{prefixo}_btn"):
+        try:
+            with st.spinner("A procurar na Open Food Facts…"):
+                st.session_state[f"{prefixo}_res"] = off.pesquisar(termo, pais)
+        except ValueError as e:
+            st.error(str(e))
+            st.session_state[f"{prefixo}_res"] = []
+
+    with st.expander("📷 Tenho o código de barras"):
+        cb = st.text_input("Código de barras", key=f"{prefixo}_cb",
+                           placeholder="Ex.: 5601234567890")
+        if st.button("Procurar código", key=f"{prefixo}_cbbtn") and cb.strip():
             try:
-                with st.spinner("A procurar na Open Food Facts…"):
-                    st.session_state[f"{prefixo}_res"] = off.pesquisar(termo, pais)
+                with st.spinner("A procurar…"):
+                    st.session_state[f"{prefixo}_res"] = [off.por_codigo(cb.strip(), pais)]
             except ValueError as e:
                 st.error(str(e))
-                st.session_state[f"{prefixo}_res"] = []
 
-        with st.expander("📷 Tenho o código de barras"):
-            cb = st.text_input("Código de barras", key=f"{prefixo}_cb",
-                               placeholder="Ex.: 5601234567890")
-            if st.button("Procurar código", key=f"{prefixo}_cbbtn") and cb.strip():
-                try:
-                    with st.spinner("A procurar…"):
-                        st.session_state[f"{prefixo}_res"] = [off.por_codigo(cb.strip(), pais)]
-                except ValueError as e:
-                    st.error(str(e))
-
-        res = st.session_state.get(f"{prefixo}_res")
-        if res:
-            i = st.selectbox("Resultado", range(len(res)),
-                             format_func=lambda i: res[i]["nome"], key=f"{prefixo}_sel")
-            prod = res[i]
-            if prod.get("quantidade"):
-                st.caption(f"Embalagem: {prod['quantidade']}")
-            micros = sum(1 for c in _MICROS if prod["por_100g"].get(c, 0) > 0)
-            if micros < 5:
-                st.warning(f"⚠️ Este produto só tem **{micros} de {len(_MICROS)}** "
-                           "vitaminas/minerais registados na Open Food Facts. Os que faltam "
-                           "contam como 0 — as pontuações e carências podem ficar subestimadas.")
-            gramas = st.number_input("Peso consumido (g/ml)", 1.0, 2000.0, 100.0, step=10.0,
-                                     key=f"{prefixo}_g")
-            st.caption(f"➡️ {gramas:.0f} g · {_resumo(nutrients.escalar(prod['por_100g'], gramas))}")
-            if st.button("➕ Adicionar à refeição", key=f"{prefixo}_add_off", type="primary"):
-                cesto.append({"nome": prod["nome"], "gramas": float(gramas),
-                              "por_100g": prod["por_100g"]})
-                st.rerun()
-        elif res == []:
-            st.info("Sem resultados com valores nutricionais. Tenta outro termo ou os "
-                    "alimentos comuns.")
+    res = st.session_state.get(f"{prefixo}_res")
+    if res:
+        i = st.selectbox("Resultado", range(len(res)),
+                         format_func=lambda i: res[i]["nome"], key=f"{prefixo}_sel")
+        prod = res[i]
+        if prod.get("quantidade"):
+            st.caption(f"Embalagem: {prod['quantidade']}")
+        micros = sum(1 for c in _MICROS if prod["por_100g"].get(c, 0) > 0)
+        if micros < 5:
+            st.warning(f"⚠️ Este produto só tem **{micros} de {len(_MICROS)}** "
+                       "vitaminas/minerais registados na Open Food Facts. Os que faltam "
+                       "contam como 0 — as pontuações e carências podem ficar subestimadas.")
+        gramas = st.number_input("Peso consumido (g/ml)", 1.0, 2000.0, 100.0, step=10.0,
+                                 key=f"{prefixo}_g")
+        st.caption(f"➡️ {gramas:.0f} g · {_resumo(nutrients.escalar(prod['por_100g'], gramas))}")
+        if st.button("➕ Adicionar à refeição", key=f"{prefixo}_add_off", type="primary"):
+            cesto.append({"nome": prod["nome"], "gramas": float(gramas),
+                          "por_100g": prod["por_100g"]})
+            st.rerun()
+    elif res == []:
+        st.info("Sem resultados com valores nutricionais. Tenta outro termo ou os "
+                "alimentos comuns.")
 
 
 def mostrar_itens(cesto: list, prefixo: str, sexo: str | None = None,
