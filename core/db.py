@@ -278,6 +278,25 @@ def refeicoes_do_dia(uid, dia: str) -> list[dict]:
     return resultado
 
 
+def todas_refeicoes(uid) -> list[dict]:
+    with _engine().connect() as con:
+        linhas = con.execute(select(refeicoes).where(refeicoes.c.utilizador_id == uid)
+                             .order_by(refeicoes.c.data, refeicoes.c.hora)).mappings().all()
+    out = []
+    for l in linhas:
+        d = dict(l)
+        d["nutrientes"] = json.loads(d["nutrientes"])
+        out.append(d)
+    return out
+
+
+def todos_exercicios(uid) -> list[dict]:
+    with _engine().connect() as con:
+        linhas = con.execute(select(exercicios).where(exercicios.c.utilizador_id == uid)
+                             .order_by(exercicios.c.data)).mappings().all()
+    return [dict(l) for l in linhas]
+
+
 def apagar_refeicao(refeicao_id: int) -> None:
     with _engine().begin() as con:
         linha = con.execute(select(refeicoes.c.foto_path).where(

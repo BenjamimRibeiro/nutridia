@@ -119,6 +119,42 @@ def resumo_semanal(uid, perfil: dict, alvos: dict) -> dict:
     }
 
 
+def desafios_semanais(uid, perfil: dict, alvos: dict) -> list[dict]:
+    """Desafios da semana atual (segunda → hoje), com progresso automático."""
+    hoje = date.today()
+    inicio = hoje - timedelta(days=hoje.weekday())  # segunda-feira
+    dias = [(inicio + timedelta(days=i)) for i in range((hoje - inicio).days + 1)]
+
+    agua_ok = saud = fibra_ok = acucar_ok = registados = sessoes = 0
+    for d in dias:
+        ds = d.strftime("%Y-%m-%d")
+        sessoes += len(db.exercicios_do_dia(uid, ds))
+        if not db.tem_refeicoes(uid, ds):
+            continue
+        registados += 1
+        totais = db.totais_do_dia(uid, ds)
+        if db.agua_do_dia(uid, ds) >= alvos["agua_ml"]:
+            agua_ok += 1
+        alvo_kcal = alvos["kcal"] + db.exercicio_kcal_do_dia(uid, ds)
+        if dia_saudavel(totais, alvo_kcal, alvos):
+            saud += 1
+        if totais.get("fibra_g", 0) >= alvos["fibra_g"]:
+            fibra_ok += 1
+        if totais.get("acucar_g", 0) <= nutrients.LIMITES["acucar_g"]["limite"]:
+            acucar_ok += 1
+
+    crus = [
+        ("💧", "Bem hidratado", "Água em dia em 5 dias", agua_ok, 5),
+        ("🥗", "Comer a sério", "3 dias saudáveis", saud, 3),
+        ("🏃", "Mexe-te", "3 treinos esta semana", sessoes, 3),
+        ("🌿", "Cheio de fibra", "Fibra na meta em 4 dias", fibra_ok, 4),
+        ("🍬", "Açúcar sob controlo", "Sem exagerar no açúcar em 5 dias", acucar_ok, 5),
+        ("📋", "Consistente", "Registar refeições em 6 dias", registados, 6),
+    ]
+    return [{"emoji": e, "nome": n, "desc": d, "atual": min(a, alvo), "alvo": alvo,
+             "completo": a >= alvo} for e, n, d, a, alvo in crus]
+
+
 def medalhas(uid, perfil: dict, alvos: dict) -> list[dict]:
     """Lista de medalhas com estado (conquistada ou não)."""
     seq = sequencia_atual(uid, alvos)

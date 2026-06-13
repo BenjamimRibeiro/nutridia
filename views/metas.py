@@ -39,9 +39,25 @@ def mostrar():
         st.info("Fica dentro do alvo de calorias e come equilibrado hoje para começares as "
                 "tuas sequências! 🌱")
 
+    # ---- Desafios da semana ----
+    st.divider()
+    st.subheader(i18n.t("🎯 Desafios desta semana", "🎯 This week's challenges"))
+    desafios = metas.desafios_semanais(uid, perfil, alvos)
+    feitos = sum(1 for d in desafios if d["completo"])
+    st.caption(i18n.t(f"Completaste **{feitos} de {len(desafios)}** desafios esta semana. "
+                      "Reiniciam todas as segundas-feiras.",
+                      f"You completed **{feitos} of {len(desafios)}** challenges this week. "
+                      "They reset every Monday."))
+    cols = st.columns(2)
+    for k, d in enumerate(desafios):
+        with cols[k % 2]:
+            marca = "✅" if d["completo"] else f"{d['atual']}/{d['alvo']}"
+            st.markdown(f"{d['emoji']} **{d['nome']}** — {d['desc']} · {marca}")
+            st.progress(d["atual"] / d["alvo"])
+
     # ---- Resumo da semana ----
     st.divider()
-    st.subheader("📊 Resumo da semana")
+    st.subheader(i18n.t("📊 Resumo da semana", "📊 Week summary"))
     r = metas.resumo_semanal(uid, perfil, alvos)
     if r["dias"] == 0:
         st.caption("Ainda sem registos esta semana — regista refeições e o boletim aparece aqui.")

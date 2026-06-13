@@ -79,6 +79,33 @@ def _evolucao_pontuacoes(uid, alvos: dict, sexo: str) -> None:
     st.altair_chart((linha + pontos).properties(height=220), use_container_width=True)
 
 
+def _onboarding(uid, perfil) -> None:
+    """Guia de primeira utilização — checklist que desaparece quando concluída/escondida."""
+    chave = f"onboarding_{uid}"
+    if db.obter_definicao(chave) == "1":
+        return
+    tem_refeicao = bool(db.dias_com_registos(uid, 1))
+    tem_extras = bool(perfil and (perfil.get("alergias") or perfil.get("suplementos")
+                                  or perfil.get("sol_habitual")))
+    with st.container(border=True):
+        st.markdown(i18n.t("### 👋 Bem-vindo ao NutriDia!", "### 👋 Welcome to NutriDia!"))
+        st.markdown(i18n.t("Em poucos passos ficas a usar tudo:", "A few steps to get going:"))
+        st.markdown(f"{'✅' if perfil else '⬜'} " + i18n.t(
+            "**1.** Preenche o teu **Perfil** (sexo, peso, altura, objetivo)",
+            "**1.** Fill in your **Profile** (sex, weight, height, goal)"))
+        st.markdown(f"{'✅' if tem_extras else '⬜'} " + i18n.t(
+            "**2.** No Perfil, define **alergias, suplementos e sol** (opcional)",
+            "**2.** In Profile, set **allergies, supplements and sun** (optional)"))
+        st.markdown(f"{'✅' if tem_refeicao else '⬜'} " + i18n.t(
+            "**3.** Regista a tua **1ª refeição** em «Registar refeição»",
+            "**3.** Log your **first meal** in “Log a meal”"))
+        st.markdown("⬜ " + i18n.t("**4.** Vê o teu **Progresso** e as pontuações de bem-estar",
+                                   "**4.** Check your **Progress** and wellbeing scores"))
+        if st.button(i18n.t("Já percebi, esconder ✨", "Got it, hide ✨")):
+            db.guardar_definicao(chave, "1")
+            st.rerun()
+
+
 def mostrar():
     tema.cabecalho("📊", i18n.t("O teu dia", "Your day"),
                    i18n.t("Calorias, nutrientes e bem-estar de hoje num relance",
@@ -86,9 +113,10 @@ def mostrar():
 
     uid = st.session_state.get("uid")
     perfil = db.obter_perfil(uid)
+    _onboarding(uid, perfil)
     if not perfil:
-        st.info("👋 Bem-vindo! Começa por preencher o teu **Perfil** (no menu lateral) "
-                "para calcularmos as tuas necessidades diárias.")
+        st.info(i18n.t("Preenche o teu **Perfil** (no menu lateral) para começar.",
+                       "Fill in your **Profile** (in the side menu) to get started."))
         return
 
     hoje = date.today().strftime("%Y-%m-%d")
