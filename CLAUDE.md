@@ -13,12 +13,21 @@ calorias, micronutrientes, pontuações de bem-estar e peso. **Sem IA, sem chave
 ## Arquitetura
 
 - `app.py` — entrada; `st.navigation` com 6 páginas-função (`views/*.mostrar()`)
-- `core/db.py` — SQLite em `data/nutridia.db`, esquema **multi-utilizador** (tabelas
-  utilizadores, perfis, refeicoes, agua, peso_registos, alimentos_custom, favoritos,
-  definicoes; quase todas as funções recebem `uid` como 1º arg). `_migrar()` converte
-  o esquema antigo single-user e é idempotente. A UI ainda NÃO expõe troca de utilizador
-  (decisão do utilizador): `app.py` põe `st.session_state["uid"]` = primeiro utilizador.
-  Refeições guardam `itens` (JSON: lista {nome, gramas, por_100g}) além dos totais.
+- `core/db.py` — **SQLAlchemy Core** (esquema via `Table`/`metadata.create_all`).
+  Motor de `NUTRIDIA_DB_URL` (default `sqlite:///data/nutridia.db`; na nuvem = Postgres).
+  SQL portável (sem `ON CONFLICT`: upserts manuais select→insert/update). `reset_engine()`
+  para testes. Multi-utilizador (tabela `utilizadores` com username/pass_hash/pass_salt);
+  quase todas as funções recebem `uid` como 1º arg. `_migrar()` faz ALTER ADD COLUMN das
+  colunas de auth em BDs antigas. Refeições guardam `itens` (JSON) além dos totais.
+- `core/auth.py` — hash PBKDF2-SHA256 (stdlib, sem dependências). `db.criar_conta`,
+  `db.autenticar`, `db.username_existe`.
+- **Login (`views/login.py`)**: só na versão online. `app.py` calcula `REQUER_LOGIN`
+  = url Postgres OU secret `require_login`. Local (SQLite) → sem login, utilizador default
+  "Eu" automático. Online → ecrã de login/registo; `st.session_state["uid"]`/`["nome"]`.
+- **Deploy:** ver `DEPLOY.md` (GitHub privado → Supabase Postgres → Streamlit Cloud +
+  secret `database_url`). `.gitignore` exclui `data/`, segredos, `.venv`, `cloudflared.exe`.
+  `core/ai.py` está dormente e importa anthropic/PIL (já NÃO estão em requirements) —
+  não é importado por nada; se reativares, repõe as deps.
 - `core/metas.py` — sequências (dia dentro do alvo = 80-110% kcal), medalhas.
 - `core/calc.py::projecao_peso` — estima data de chegada ao peso-alvo (tendência real
   do histórico de peso se houver ≥1 semana de registos; senão ritmo planeado).
