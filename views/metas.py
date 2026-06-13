@@ -3,7 +3,7 @@ from datetime import date
 
 import streamlit as st
 
-from core import calc, db, metas, nutrients
+from core import calc, db, metas, nutrients, scores
 from views import tema
 
 
@@ -36,6 +36,35 @@ def mostrar():
     else:
         st.info("Fica dentro do alvo de calorias e come equilibrado hoje para começares as "
                 "tuas sequências! 🌱")
+
+    # ---- Resumo da semana ----
+    st.divider()
+    st.subheader("📊 Resumo da semana")
+    r = metas.resumo_semanal(uid, perfil, alvos)
+    if r["dias"] == 0:
+        st.caption("Ainda sem registos esta semana — regista refeições e o boletim aparece aqui.")
+    else:
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Dias registados", f"{r['dias']}/7")
+        c2.metric("🔥 Dias no alvo", f"{r['no_alvo']}/{r['dias']}")
+        c3.metric("🥗 Dias saudáveis", f"{r['saudaveis']}/{r['dias']}")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Média de calorias", f"{r['kcal']:.0f} kcal")
+        c2.metric("Média de proteína", f"{r['proteina_g']:.0f} g")
+        c3.metric("Média de água", f"{r['agua_ml']:.0f} ml")
+
+        if r["melhor"] and r["pior"]:
+            mc, mf = r["melhor"]
+            pc, pf = r["pior"]
+            st.markdown(f"🟢 **Onde brilhas:** {nutrients.nome_de(mc)} ({min(mf, 1):.0%} do alvo) "
+                        f"· 🔴 **A melhorar:** {nutrients.nome_de(pc)} ({min(pf, 1):.0%} do alvo)")
+        if r["pontuacoes"]:
+            top3 = sorted(r["pontuacoes"].items(), key=lambda x: -x[1])[:3]
+            baixo = min(r["pontuacoes"].items(), key=lambda x: x[1])
+            fortes = " · ".join(f"{scores.PONTUACOES[n]['emoji']} {n} {v}%" for n, v in top3)
+            st.markdown(f"**Bem-estar médio — melhores:** {fortes}")
+            st.caption(f"A área a precisar de mais atenção: "
+                       f"{scores.PONTUACOES[baixo[0]]['emoji']} {baixo[0]} ({baixo[1]}%).")
 
     # ---- Medalhas ----
     st.subheader("🏅 Medalhas")

@@ -1,7 +1,7 @@
 """Metas, sequências (streaks) e medalhas — calculadas a partir dos registos."""
 from datetime import date, timedelta
 
-from core import db, nutrients
+from core import db, nutrients, scores
 
 
 def dia_dentro_alvo(totais: dict, alvo_kcal: float) -> bool:
@@ -81,6 +81,42 @@ def _medias_n_dias(uid, n: int) -> tuple[dict, int]:
             for k, v in totais.items():
                 somas[k] = somas.get(k, 0) + v
     return ({k: v / dias for k, v in somas.items()} if dias else {}), dias
+
+
+def resumo_semanal(uid, perfil: dict, alvos: dict) -> dict:
+    """Boletim dos últimos 7 dias: médias, dias no alvo/saudáveis, pontuações e
+    o nutriente mais forte / a melhorar."""
+    sexo = perfil["sexo"]
+    medias, dias = _medias_n_dias(uid, 7)
+    no_alvo = saudaveis = n_pont = 0
+    pont_acc: dict[str, float] = {}
+    for i in range(7):
+        d = (date.today() - timedelta(days=i)).strftime("%Y-%m-%d")
+        if not db.tem_refeicoes(uid, d):
+            continue
+        totais = db.totais_do_dia(uid, d)
+        alvo_kcal = alvos["kcal"] + db.exercicio_kcal_do_dia(uid, d)
+        if dia_dentro_alvo(totais, alvo_kcal):
+            no_alvo += 1
+        if dia_saudavel(totais, alvo_kcal, alvos):
+            saudaveis += 1
+        n_pont += 1
+        for nome, valor in scores.calcular(totais, {**alvos, "kcal": alvo_kcal}, sexo).items():
+            pont_acc[nome] = pont_acc.get(nome, 0) + valor
+
+    coberturas = []
+    for c in ["proteina_g", "fibra_g", *nutrients.DDR]:
+        alvo = nutrients.alvo_nutriente(c, sexo, alvos)
+        if alvo:
+            coberturas.append((c, min(medias.get(c, 0) / alvo, 2.0)))
+    return {
+        "dias": dias, "no_alvo": no_alvo, "saudaveis": saudaveis,
+        "kcal": medias.get("kcal", 0), "proteina_g": medias.get("proteina_g", 0),
+        "fibra_g": medias.get("fibra_g", 0), "agua_ml": medias.get("agua_ml", 0),
+        "pontuacoes": {k: round(v / n_pont) for k, v in pont_acc.items()} if n_pont else {},
+        "melhor": max(coberturas, key=lambda x: x[1]) if coberturas else None,
+        "pior": min(coberturas, key=lambda x: x[1]) if coberturas else None,
+    }
 
 
 def medalhas(uid, perfil: dict, alvos: dict) -> list[dict]:

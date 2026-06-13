@@ -13,7 +13,7 @@ from sqlalchemy import (Column, Float, Integer, MetaData, String, Table, Text,
                         and_, create_engine, delete, func, insert, inspect, select,
                         text, update)
 
-from core import auth, suplementos as _sup
+from core import auth, sol, suplementos as _sup
 
 PASTA_DATA = Path(__file__).resolve().parent.parent / "data"
 PASTA_FOTOS = PASTA_DATA / "fotos"
@@ -38,6 +38,7 @@ perfis = Table(
     Column("objetivo", String(40)), Column("ritmo_kg_semana", Float),
     Column("peso_alvo_kg", Float),
     Column("restricoes", Text), Column("alergias", Text), Column("suplementos", Text),
+    Column("sol_habitual", Text),
 )
 refeicoes = Table(
     "refeicoes", metadata,
@@ -129,7 +130,7 @@ def _migrar(engine) -> None:
                 con.execute(text(f"ALTER TABLE utilizadores ADD COLUMN {coluna} {tipo}"))
         if "momento" not in cols_r:
             con.execute(text("ALTER TABLE refeicoes ADD COLUMN momento VARCHAR(30)"))
-        for coluna in ("restricoes", "alergias", "suplementos"):
+        for coluna in ("restricoes", "alergias", "suplementos", "sol_habitual"):
             if coluna not in cols_p:
                 con.execute(text(f"ALTER TABLE perfis ADD COLUMN {coluna} TEXT"))
 
@@ -217,12 +218,14 @@ def obter_perfil(uid) -> dict | None:
     return d
 
 
-def guardar_preferencias(uid, restricoes: list, alergias: list, suplementos: list) -> None:
+def guardar_preferencias(uid, restricoes: list, alergias: list, suplementos: list,
+                         sol_habitual: str | None = None) -> None:
     with _engine().begin() as con:
         con.execute(update(perfis).where(perfis.c.utilizador_id == uid).values(
             restricoes=json.dumps(restricoes, ensure_ascii=False),
             alergias=json.dumps(alergias, ensure_ascii=False),
-            suplementos=json.dumps(suplementos, ensure_ascii=False)))
+            suplementos=json.dumps(suplementos, ensure_ascii=False),
+            sol_habitual=sol_habitual))
 
 
 def suplementos_nutrientes(uid) -> dict:
@@ -292,10 +295,14 @@ def totais_do_dia(uid, dia: str) -> dict:
             if isinstance(valor, (int, float)):
                 totais[chave] = totais.get(chave, 0) + valor
     totais["agua_ml"] = totais.get("agua_ml", 0) + agua_do_dia(uid, dia)
-    # suplementos diários contam nos dias ativos (com refeições) ou no dia de hoje
+    # suplementos e vitamina D do sol contam nos dias ativos (com refeições) ou hoje
     if refs or dia == date.today().strftime("%Y-%m-%d"):
-        for chave, valor in suplementos_nutrientes(uid).items():
-            totais[chave] = totais.get(chave, 0) + valor
+        perfil = obter_perfil(uid)
+        if perfil:
+            for chave, valor in _sup.nutrientes_de(perfil.get("suplementos", [])).items():
+                totais[chave] = totais.get(chave, 0) + valor
+            if perfil.get("sol_habitual"):
+                totais["vit_d_ug"] = totais.get("vit_d_ug", 0) + sol.vit_d(perfil["sol_habitual"])
     return totais
 
 

@@ -1,7 +1,7 @@
 """Perfil — dados pessoais, peso-alvo e cálculo das necessidades diárias."""
 import streamlit as st
 
-from core import calc, db, dieta, nutrients, suplementos
+from core import calc, db, dieta, nutrients, sol, suplementos
 from views import tema
 
 
@@ -78,13 +78,24 @@ def mostrar():
                                         default=perfil.get("restricoes", []))
             sup = st.multiselect("💊 Suplementos que tomas todos os dias",
                                  list(suplementos.CATALOGO), default=perfil.get("suplementos", []))
+            niveis_sol = list(sol.NIVEIS)
+            sol_atual = perfil.get("sol_habitual") or sol.PREDEFINIDO
+            sol_nivel = st.selectbox(
+                "☀️ Exposição solar habitual (o sol é a maior fonte de vitamina D)", niveis_sol,
+                index=niveis_sol.index(sol_atual) if sol_atual in niveis_sol else 1,
+                help="O teu corpo produz vitamina D ao apanhar sol. Indica quanto sol "
+                     "apanhas por dia, em média — conta automaticamente todos os dias.")
             if st.form_submit_button("💾 Guardar preferências", type="primary"):
-                db.guardar_preferencias(uid, restricoes, alergias, sup)
-                st.success("Guardado! Os suplementos passam a contar nos teus totais diários.")
+                db.guardar_preferencias(uid, restricoes, alergias, sup, sol_nivel)
+                st.success("Guardado! Suplementos e sol passam a contar nos teus totais diários.")
                 st.rerun()
 
+        notas = []
         if perfil.get("suplementos"):
             nut = suplementos.nutrientes_de(perfil["suplementos"])
-            st.caption("💊 Os teus suplementos dão por dia: " + " · ".join(
-                f"{nutrients.nome_de(c)} +{v:.0f} {nutrients.unidade_de(c)}"
-                for c, v in nut.items()))
+            notas.append("💊 **Suplementos:** " + " · ".join(
+                f"{nutrients.nome_de(c)} +{v:.0f} {nutrients.unidade_de(c)}" for c, v in nut.items()))
+        if perfil.get("sol_habitual") and sol.vit_d(perfil["sol_habitual"]):
+            notas.append(f"☀️ **Sol:** +{sol.vit_d(perfil['sol_habitual']):.0f} µg de vitamina D/dia")
+        for nota in notas:
+            st.caption(nota)
