@@ -34,6 +34,42 @@ def sequencia_atual(uid, alvos: dict) -> int:
     return seguidos
 
 
+def dia_saudavel(totais: dict, alvo_kcal: float, alvos: dict) -> bool:
+    """Um dia 'a sério': calorias na zona E proteína E fibra ok E sem rebentar os
+    limites de açúcar/sódio/gordura saturada. Difícil de enganar com fast food."""
+    kcal = totais.get("kcal", 0)
+    if kcal <= 0 or not (0.80 * alvo_kcal <= kcal <= 1.10 * alvo_kcal):
+        return False
+    if totais.get("proteina_g", 0) < 0.85 * alvos["proteina_g"]:
+        return False
+    if totais.get("fibra_g", 0) < 0.70 * alvos["fibra_g"]:
+        return False
+    for chave in ("sodio_mg", "acucar_g", "gordura_saturada_g"):
+        if totais.get(chave, 0) > nutrients.LIMITES[chave]["limite"]:
+            return False
+    return True
+
+
+def sequencia_saudavel(uid, alvos: dict) -> int:
+    """Dias seguidos 'saudáveis' (qualidade, não só calorias). Dias doentes não quebram."""
+    hoje = date.today()
+    inicio = 0 if db.tem_refeicoes(uid, hoje.strftime("%Y-%m-%d")) else 1
+    seguidos = 0
+    for i in range(inicio, 365):
+        dia = (hoje - timedelta(days=i)).strftime("%Y-%m-%d")
+        if db.obter_estado(uid, dia)["estado"] == "Doente":
+            seguidos += 1
+            continue
+        if not db.tem_refeicoes(uid, dia):
+            break
+        alvo_kcal = alvos["kcal"] + db.exercicio_kcal_do_dia(uid, dia)
+        if dia_saudavel(db.totais_do_dia(uid, dia), alvo_kcal, alvos):
+            seguidos += 1
+        else:
+            break
+    return seguidos
+
+
 def _medias_n_dias(uid, n: int) -> tuple[dict, int]:
     somas: dict[str, float] = {}
     dias = 0
@@ -50,6 +86,7 @@ def _medias_n_dias(uid, n: int) -> tuple[dict, int]:
 def medalhas(uid, perfil: dict, alvos: dict) -> list[dict]:
     """Lista de medalhas com estado (conquistada ou não)."""
     seq = sequencia_atual(uid, alvos)
+    seq_saud = sequencia_saudavel(uid, alvos)
     medias7, dias7 = _medias_n_dias(uid, 7)
     sexo = perfil["sexo"]
 
@@ -72,6 +109,10 @@ def medalhas(uid, perfil: dict, alvos: dict) -> list[dict]:
          "conquistada": seq >= 3, "progresso": f"{min(seq, 3)}/3 dias"},
         {"emoji": "🏆", "nome": "Semana perfeita", "desc": "7 dias seguidos dentro do alvo",
          "conquistada": seq >= 7, "progresso": f"{min(seq, 7)}/7 dias"},
+        {"emoji": "🥦", "nome": "Corpo cuidado", "desc": "3 dias saudáveis seguidos",
+         "conquistada": seq_saud >= 3, "progresso": f"{min(seq_saud, 3)}/3 dias"},
+        {"emoji": "🥇", "nome": "Semana impecável", "desc": "7 dias saudáveis seguidos",
+         "conquistada": seq_saud >= 7, "progresso": f"{min(seq_saud, 7)}/7 dias"},
         {"emoji": "💪", "nome": "Semana proteica", "desc": "Média de proteína na meta (7 dias)",
          "conquistada": dias7 >= 3 and medias7.get("proteina_g", 0) >= alvos["proteina_g"],
          "progresso": f"{medias7.get('proteina_g', 0):.0f}/{alvos['proteina_g']} g" if dias7 else "sem dados"},

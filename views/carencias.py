@@ -84,8 +84,7 @@ def mostrar():
                 nome = nutrients.nome_de(chave)
                 unidade = nutrients.unidade_de(chave)
                 with st.expander(f"🔴 {nome} — {fracao:.0%} do alvo "
-                                 f"({medias.get(chave, 0):.0f}/{alvo:.0f} {unidade})",
-                                 expanded=fracao < 0.4):
+                                 f"({medias.get(chave, 0):.0f}/{alvo:.0f} {unidade})"):
                     st.progress(min(fracao, 1.0))
                     if info:
                         st.markdown(f"**Se continuares assim, podes sentir:** {info['curto_prazo']}")

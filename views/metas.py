@@ -18,17 +18,24 @@ def mostrar():
 
     alvos = calc.alvos_diarios(perfil)
 
-    # ---- Sequência ----
+    # ---- Sequências ----
     seq = metas.sequencia_atual(uid, alvos)
-    c1, c2 = st.columns([1, 2])
-    c1.metric("🔥 Sequência atual", f"{seq} dia(s)")
-    if seq == 0:
-        c2.info("Fica dentro do teu alvo de calorias hoje para começares uma sequência! "
-                "(entre 80% e 110% do alvo)")
-    elif seq < 3:
-        c2.success(f"Boa! Mais {3 - seq} dia(s) para a medalha 🔥 *Em chamas*.")
+    seq_saud = metas.sequencia_saudavel(uid, alvos)
+    c1, c2 = st.columns(2)
+    c1.metric("🔥 Calorias no alvo", f"{seq} dia(s)",
+              help="Dias seguidos com as calorias entre 80% e 110% do alvo.")
+    c2.metric("🥗 Dias saudáveis", f"{seq_saud} dia(s)",
+              help="Dias seguidos a sério: calorias na zona E proteína E fibra ok E sem "
+                   "rebentar os limites de açúcar/sódio/gordura saturada.")
+    if seq_saud >= 3:
+        st.success(f"💚 Estás a cuidar mesmo do teu corpo — {seq_saud} dia(s) saudáveis seguidos!")
+    elif seq >= 1:
+        st.info("A sequência de **calorias** é fácil de manter; a de **dias saudáveis** é a "
+                "que mostra que estás a cuidar do corpo (não basta não passar das calorias — "
+                "conta a qualidade). Tenta fazê-las crescer juntas! 🌱")
     else:
-        c2.success(f"Excelente! Estás com uma sequência de {seq} dias. Não a quebres! 💪")
+        st.info("Fica dentro do alvo de calorias e come equilibrado hoje para começares as "
+                "tuas sequências! 🌱")
 
     # ---- Medalhas ----
     st.subheader("🏅 Medalhas")

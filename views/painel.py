@@ -149,16 +149,22 @@ def mostrar():
         st.progress(fracao, text=f"{nutrients.nome_de(chave)}: {fracao:.0%} do alvo")
 
     # ---- Sugestão inteligente: o que comer a seguir ----
-    if estado["estado"] != "Doente" and refeicoes:
-        sug = sugestoes.para_agora(totais, alvos_aj, perfil.get("alergias", []),
-                                   perfil.get("restricoes", []))
-        if sug["alimentos"]:
-            with st.expander("🤖 Sugestão: o que comer a seguir"):
-                st.markdown(f"Faltam-te ~**{sug['falta_prot']:.0f} g de proteína** e tens "
-                            f"~**{sug['resto_kcal']:.0f} kcal** disponíveis hoje. Que tal:")
-                for a in sug["alimentos"]:
-                    st.markdown(f"- 🍴 **{a['nome']}** ({a['rotulo']}, {a['gramas']} g) → "
-                                f"+{a['proteina_g']:.0f} g proteína · {a['kcal']:.0f} kcal")
+    if estado["estado"] != "Doente":
+        sug = sugestoes.para_agora(totais, alvos_aj, perfil["sexo"],
+                                   perfil.get("alergias", []), perfil.get("restricoes", []))
+        if sug["saudaveis"] or sug["treat"]:
+            with st.expander("🤖 Sugestão: o que comer a seguir", expanded=False):
+                if sug["saudaveis"]:
+                    st.markdown(f"Tens ~**{sug['resto_kcal']:.0f} kcal** disponíveis. Opções "
+                                "saudáveis e variadas que te dão o que ainda falta hoje:")
+                    for s in sug["saudaveis"]:
+                        ajuda = ", ".join(nutrients.nome_de(c) for c, _ in s["cobre"][:3])
+                        st.markdown(f"- 🥗 **{s['nome']}** ({s['rotulo']}, {s['gramas']} g) → "
+                                    f"bom para **{ajuda}** · {s['kcal']:.0f} kcal")
+                if sug["treat"]:
+                    t = sug["treat"]
+                    st.markdown(f"😋 E se te apetecer algo bom (sabe sempre bem de vez em quando!): "
+                                f"**{t['nome']}** ({t['rotulo']}, {t['gramas']} g) · {t['kcal']:.0f} kcal")
                 st.caption("Sugestões que respeitam as tuas alergias e preferências (Perfil).")
 
     # ---- Água ----
