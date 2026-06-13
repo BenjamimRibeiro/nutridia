@@ -4,7 +4,20 @@ porções típicas — para registar refeições sem precisar de saber os nutrie
 Valores baseados em tabelas de composição de alimentos (INSA/USDA), arredondados.
 Cada porção é (etiqueta, gramas). Onde um nutriente não é fonte relevante, fica 0.
 """
+from core import i18n
 from core.nutrients import CAMPOS_NUTRIENTES
+
+_CAT_EN = {
+    "Pão e cereais": "Bread & cereals", "Proteínas": "Proteins", "Lacticínios": "Dairy",
+    "Leguminosas": "Legumes", "Sopas e pratos": "Soups & dishes", "Fruta": "Fruit",
+    "Vegetais": "Vegetables", "Molhos e temperos": "Sauces & seasonings",
+    "Gorduras e frutos secos": "Fats & nuts", "Doces e snacks": "Sweets & snacks",
+    "Bebidas": "Drinks", "⭐ Os meus": "⭐ Mine",
+}
+
+
+def categoria_nome(cat: str) -> str:
+    return _CAT_EN.get(cat, cat) if i18n.idioma() == "en" else cat
 
 
 def _f(nome: str, categoria: str, porcoes: list[tuple[str, int]], **nutrientes) -> dict:

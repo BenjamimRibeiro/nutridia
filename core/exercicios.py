@@ -32,5 +32,24 @@ ATIVIDADES = {
 }
 
 
+_EN = {
+    "Caminhada (lenta)": "Walking (slow)", "Caminhada (rápida)": "Walking (brisk)",
+    "Passear o cão": "Walking the dog", "Corrida (8 km/h)": "Running (8 km/h)",
+    "Corrida (12 km/h)": "Running (12 km/h)", "Ciclismo (lazer)": "Cycling (leisure)",
+    "Ciclismo (intenso)": "Cycling (intense)", "Natação": "Swimming", "Futebol": "Football",
+    "Basquetebol": "Basketball", "Ténis": "Tennis", "Padel": "Padel",
+    "Ginásio / musculação": "Gym / weights", "HIIT / crossfit": "HIIT / crossfit",
+    "Saltar à corda": "Jump rope", "Remo": "Rowing", "Elíptica": "Elliptical",
+    "Subir escadas": "Stair climbing", "Dança": "Dancing", "Yoga": "Yoga",
+    "Pilates": "Pilates", "Surf": "Surfing", "Jardinagem": "Gardening",
+    "Limpeza da casa": "House cleaning",
+}
+
+
+def nome(atividade: str) -> str:
+    from core import i18n
+    return _EN.get(atividade, atividade) if i18n.idioma() == "en" else atividade
+
+
 def kcal(met: float, peso_kg: float, minutos: int) -> int:
     return round(met * peso_kg * minutos / 60)

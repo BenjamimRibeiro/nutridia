@@ -1,5 +1,5 @@
 """Pontuações diárias de bem-estar (0-100%) calculadas a partir do que comeste."""
-from core import nutrients
+from core import i18n, nutrients
 
 # Cada pontuação combina nutrientes benéficos (peso positivo) e
 # penalizadores (excesso acima do limite baixa a nota).
@@ -118,3 +118,45 @@ def cor_da_pontuacao(valor: int) -> str:
     if valor >= 40:
         return "🟠"
     return "🔴"
+
+
+# ---- Tradução para inglês ----
+_NOMES_EN = {
+    "Cérebro & Foco": "Brain & Focus", "Energia": "Energy", "Descanso & Sono": "Rest & Sleep",
+    "Imunidade": "Immunity", "Músculo & Recuperação": "Muscle & Recovery", "Coração": "Heart",
+    "Pele & Cabelo": "Skin & Hair", "Digestão": "Digestion", "Humor": "Mood",
+}
+_DESC_EN = {
+    "Cérebro & Foco": "Concentration, memory and mental clarity",
+    "Energia": "Drive and vitality throughout the day",
+    "Descanso & Sono": "Sleep quality and relaxation",
+    "Imunidade": "Defences against colds and infections",
+    "Músculo & Recuperação": "Muscle building and workout recovery",
+    "Coração": "Cardiovascular health and blood pressure",
+    "Pele & Cabelo": "Skin, hair and nail health",
+    "Digestão": "Gut transit and digestive comfort",
+    "Humor": "Emotional stability and good mood",
+}
+_DICA_EN = {
+    "Cérebro & Foco": "salmon and sardines, walnuts, eggs, spinach, legumes",
+    "Energia": "oats, banana, lean meat, legumes, nuts and water",
+    "Descanso & Sono": "nuts, seeds, dairy, banana (and less coffee in the afternoon)",
+    "Imunidade": "orange and kiwi, peppers, eggs, shellfish, yogurt",
+    "Músculo & Recuperação": "chicken, eggs, tuna, yogurt, legumes, potato",
+    "Coração": "oats, legumes, olive oil, oily fish, banana (and less salt)",
+    "Pele & Cabelo": "carrot, avocado, almonds, citrus and plenty of water",
+    "Digestão": "oats, legumes, fruit with skin, vegetables and plenty of water",
+    "Humor": "oily fish, banana, spinach, dark chocolate, legumes",
+}
+
+
+def nome(n: str) -> str:
+    return _NOMES_EN.get(n, n) if i18n.idioma() == "en" else n
+
+
+def descricao(n: str) -> str:
+    return _DESC_EN[n] if i18n.idioma() == "en" else PONTUACOES[n]["descricao"]
+
+
+def dica(n: str) -> str:
+    return _DICA_EN[n] if i18n.idioma() == "en" else PONTUACOES[n]["dica"]

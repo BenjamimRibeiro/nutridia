@@ -39,5 +39,50 @@ CONFORTO = {
 }
 
 
+_TIPOS_EN = {"Constipação": "Cold", "Gripe": "Flu", "Dor de garganta": "Sore throat",
+             "Febre": "Fever", "Indisposição estomacal": "Upset stomach", "Outra": "Other"}
+
+_CONFORTO_EN = {
+    "Constipação": {
+        "alimentos": "chicken soup, warm soups, orange and kiwi, honey and lemon, ginger, garlic",
+        "nutrientes": "Vitamin C, zinc and fluids support your immune system",
+        "dica": "Drink plenty of warm fluids and rest.",
+    },
+    "Gripe": {
+        "alimentos": "chicken soup, broths, soups, citrus, ginger, honey, tea",
+        "nutrientes": "Fluids, vitamin C and zinc for the immune system",
+        "dica": "Rest and hydrate well; eat light and warm.",
+    },
+    "Dor de garganta": {
+        "alimentos": "honey and lemon, warm tea, smooth soups, jelly, soft foods",
+        "nutrientes": "Warm fluids and honey soothe the throat",
+        "dica": "Avoid very dry, spicy or overly acidic food.",
+    },
+    "Febre": {
+        "alimentos": "plenty of water, soups, chicken soup, water-rich fruit (watermelon, orange)",
+        "nutrientes": "Hydration matters most; eat light",
+        "dica": "Drink fluids often even without appetite.",
+    },
+    "Indisposição estomacal": {
+        "alimentos": "rice, banana, apple, toast, light chicken soup (bland diet)",
+        "nutrientes": "Simple foods and fluids; replace potassium (banana)",
+        "dica": "Eat little and often; avoid fat and dairy for now.",
+    },
+    "Outra": {
+        "alimentos": "soups, chicken soup, fruit, plenty of water, light foods",
+        "nutrientes": "Hydration and light foods help you recover",
+        "dica": "Listen to your body, eat light and rest.",
+    },
+}
+
+
+def nome(tipo: str) -> str:
+    from core import i18n
+    return _TIPOS_EN.get(tipo, tipo) if i18n.idioma() == "en" else tipo
+
+
 def conforto(tipo: str) -> dict:
+    from core import i18n
+    if i18n.idioma() == "en":
+        return _CONFORTO_EN.get(tipo, _CONFORTO_EN["Outra"])
     return CONFORTO.get(tipo, CONFORTO["Outra"])

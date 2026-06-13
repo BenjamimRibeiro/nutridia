@@ -3,14 +3,19 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from core import nutrients
+from core import i18n, nutrients
 
-# grupos de nutrientes para gráficos separados
+_t = i18n.t
+
+# grupos de nutrientes para gráficos separados (título PT, título EN, chaves)
 _GRUPOS = [
-    ("🥑 Macronutrientes", ["proteina_g", "hidratos_g", "gordura_g", "fibra_g", "omega3_g"]),
-    ("⛏️ Minerais", ["calcio_mg", "ferro_mg", "magnesio_mg", "potassio_mg", "zinco_mg"]),
-    ("🍊 Vitaminas", ["vit_a_ug", "vit_c_mg", "vit_d_ug", "vit_e_mg", "vit_k_ug",
-                      "vit_b1_mg", "vit_b2_mg", "vit_b3_mg", "vit_b6_mg", "folato_ug", "vit_b12_ug"]),
+    ("🥑 Macronutrientes", "🥑 Macronutrients",
+     ["proteina_g", "hidratos_g", "gordura_g", "fibra_g", "omega3_g"]),
+    ("⛏️ Minerais", "⛏️ Minerals",
+     ["calcio_mg", "ferro_mg", "magnesio_mg", "potassio_mg", "zinco_mg"]),
+    ("🍊 Vitaminas", "🍊 Vitamins",
+     ["vit_a_ug", "vit_c_mg", "vit_d_ug", "vit_e_mg", "vit_k_ug",
+      "vit_b1_mg", "vit_b2_mg", "vit_b3_mg", "vit_b6_mg", "folato_ug", "vit_b12_ug"]),
 ]
 _CORES = {"Em falta": "#E8743B", "Quase lá": "#F2C14E",
           "Completo": "#5B8C5A", "OK": "#5B8C5A", "Excesso": "#C0392B"}
@@ -28,7 +33,9 @@ def _estado(pct: float, limite: bool = False) -> str:
     return "Quase lá" if pct >= 70 else "Em falta"
 
 
-def _grafico(dados: list, titulo: str, x_titulo: str = "% do objetivo diário"):
+def _grafico(dados: list, titulo: str, x_titulo: str | None = None):
+    if x_titulo is None:
+        x_titulo = _t("% do objetivo diário", "% of daily target")
     df = pd.DataFrame(dados).sort_values("ord")
     ordem = df["Nutriente"].tolist()
     barras = alt.Chart(df).mark_bar(size=18, cornerRadiusTopRight=6,
@@ -42,9 +49,9 @@ def _grafico(dados: list, titulo: str, x_titulo: str = "% do objetivo diário"):
         color=alt.Color("Estado:N",
                         scale=alt.Scale(domain=list(_CORES), range=list(_CORES.values())),
                         legend=None),
-        tooltip=[alt.Tooltip("Nutriente:N", title="Nutriente"),
-                 alt.Tooltip("texto:N", title="Consumido / alvo"),
-                 alt.Tooltip("real:Q", title="% do objetivo", format=".0f")],
+        tooltip=[alt.Tooltip("Nutriente:N", title=_t("Nutriente", "Nutrient")),
+                 alt.Tooltip("texto:N", title=_t("Consumido / alvo", "Eaten / target")),
+                 alt.Tooltip("real:Q", title=_t("% do objetivo", "% of target"), format=".0f")],
     )
     regra = alt.Chart(pd.DataFrame({"x": [100]})).mark_rule(
         color="#9AA79A", strokeDash=[4, 3], size=1.5).encode(x="x:Q")
@@ -56,7 +63,8 @@ def _grafico(dados: list, titulo: str, x_titulo: str = "% do objetivo diário"):
 
 def graficos_cobertura(totais: dict, sexo: str, alvos: dict) -> None:
     """Vários gráficos de barras (macros, minerais, vitaminas, a moderar) do dia."""
-    for titulo, chaves in _GRUPOS:
+    for titulo_pt, titulo_en, chaves in _GRUPOS:
+        titulo = titulo_en if i18n.idioma() == "en" else titulo_pt
         dados = []
         for c in chaves:
             alvo = nutrients.alvo_nutriente(c, sexo, alvos)
@@ -74,15 +82,18 @@ def graficos_cobertura(totais: dict, sexo: str, alvos: dict) -> None:
     for c, info in nutrients.LIMITES.items():
         cons = totais.get(c, 0)
         pct = cons / info["limite"] * 100
-        dados.append({"Nutriente": info["nome"], "pct": min(pct, 150), "real": pct,
+        dados.append({"Nutriente": nutrients.nome_de(c), "pct": min(pct, 150), "real": pct,
                       "Estado": _estado(pct, limite=True), "ord": nutrients.normalizar(info["nome"]),
-                      "texto": f"{_fmt(cons)} / máx. {_fmt(info['limite'])} {info['unidade']}"})
+                      "texto": f"{_fmt(cons)} / {_t('máx.', 'max')} {_fmt(info['limite'])} {info['unidade']}"})
     if dados:
-        st.altair_chart(_grafico(dados, "🧂 A moderar (limite diário)", "% do limite diário"),
+        st.altair_chart(_grafico(dados, _t("🧂 A moderar (limite diário)", "🧂 To limit (daily cap)"),
+                                 _t("% do limite diário", "% of daily limit")),
                         use_container_width=True)
 
-    st.caption("Barra cheia = objetivo atingido · linha tracejada = 100%. "
-               "Nos itens 🧂 *a moderar*, o ideal é ficar **abaixo** da linha.")
+    st.caption(_t("Barra cheia = objetivo atingido · linha tracejada = 100%. "
+                  "Nos itens 🧂 *a moderar*, o ideal é ficar **abaixo** da linha.",
+                  "Full bar = target reached · dashed line = 100%. For 🧂 *to limit* items, "
+                  "aim to stay **below** the line."))
 
 
 def tabela_cobertura(totais: dict, sexo: str, alvos: dict,
@@ -116,13 +127,14 @@ def tabela_cobertura(totais: dict, sexo: str, alvos: dict,
             continue
         pct = consumido / info["limite"] * 100
         estado = "⚠️" if pct > 100 else "✅"
-        linhas.append({"Estado": estado, "Nutriente": f"{info['nome']} (a moderar)",
+        linhas.append({"Estado": estado,
+                       "Nutriente": f"{nutrients.nome_de(chave)} ({_t('a moderar', 'to limit')})",
                        "Consumido": f"{_fmt(consumido)} {info['unidade']}",
-                       "Alvo": f"máx. {_fmt(info['limite'])} {info['unidade']}",
+                       "Alvo": f"{_t('máx.', 'max')} {_fmt(info['limite'])} {info['unidade']}",
                        "Progresso": min(round(pct), 100)})
 
     if not linhas:
-        st.caption("Sem valores para mostrar.")
+        st.caption(_t("Sem valores para mostrar.", "Nothing to show."))
         return
 
     linhas.sort(key=lambda l: nutrients.normalizar(l["Nutriente"]))
@@ -131,12 +143,16 @@ def tabela_cobertura(totais: dict, sexo: str, alvos: dict,
         hide_index=True,
         column_config={
             "Estado": st.column_config.TextColumn("", width="small"),
+            "Nutriente": st.column_config.TextColumn(_t("Nutriente", "Nutrient")),
+            "Consumido": st.column_config.TextColumn(_t("Consumido", "Eaten")),
+            "Alvo": st.column_config.TextColumn(_t("Alvo", "Target")),
             "Progresso": st.column_config.ProgressColumn(
-                "Progresso", min_value=0, max_value=100, format="%d%%"),
+                _t("Progresso", "Progress"), min_value=0, max_value=100, format="%d%%"),
         },
     )
-    st.caption("✅ alvo atingido · 🟡 acima de 70% · 🔴 em falta · "
-               "⚠️ ultrapassaste um limite a moderar")
+    st.caption(_t("✅ alvo atingido · 🟡 acima de 70% · 🔴 em falta · "
+                  "⚠️ ultrapassaste um limite a moderar",
+                  "✅ target reached · 🟡 above 70% · 🔴 missing · ⚠️ over a limit to watch"))
 
 
 def lista_nutrientes(nut: dict, sexo: str | None = None,
@@ -151,11 +167,13 @@ def lista_nutrientes(nut: dict, sexo: str | None = None,
         extra = ""
         if sexo:
             if chave in nutrients.LIMITES:
-                extra = f" — {valor / nutrients.LIMITES[chave]['limite']:.0%} do limite diário"
+                extra = (f" — {valor / nutrients.LIMITES[chave]['limite']:.0%} "
+                         + _t("do limite diário", "of the daily limit"))
             else:
                 alvo = nutrients.alvo_nutriente(chave, sexo, alvos)
                 if alvo:
-                    extra = f" — {valor / alvo:.0%} do teu dia"
+                    extra = f" — {valor / alvo:.0%} " + _t("do teu dia", "of your day")
         linhas.append(f"- **{nutrients.nome_de(chave)}**: {_fmt(valor)} "
                       f"{nutrients.unidade_de(chave)}{extra}")
-    return "\n".join(linhas) if linhas else "_Sem valores nutricionais registados._"
+    return "\n".join(linhas) if linhas else _t("_Sem valores nutricionais registados._",
+                                               "_No nutrition values recorded._")

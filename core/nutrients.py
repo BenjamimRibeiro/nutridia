@@ -160,7 +160,22 @@ def ddr_para(chave: str, sexo: str) -> float:
     return info["mulher"] if sexo == "Mulher" else info["homem"]
 
 
+_NOMES_EN = {
+    "kcal": "Calories", "proteina_g": "Protein", "hidratos_g": "Carbs", "gordura_g": "Fat",
+    "gordura_saturada_g": "Saturated fat", "fibra_g": "Fibre", "acucar_g": "Sugar",
+    "sodio_mg": "Sodium", "potassio_mg": "Potassium", "calcio_mg": "Calcium", "ferro_mg": "Iron",
+    "magnesio_mg": "Magnesium", "zinco_mg": "Zinc", "vit_a_ug": "Vitamin A", "vit_c_mg": "Vitamin C",
+    "vit_d_ug": "Vitamin D", "vit_e_mg": "Vitamin E", "vit_k_ug": "Vitamin K",
+    "vit_b1_mg": "Vitamin B1 (thiamine)", "vit_b2_mg": "Vitamin B2 (riboflavin)",
+    "vit_b3_mg": "Vitamin B3 (niacin)", "vit_b6_mg": "Vitamin B6", "folato_ug": "Folate (B9)",
+    "vit_b12_ug": "Vitamin B12", "omega3_g": "Omega-3", "agua_ml": "Water", "cafeina_mg": "Caffeine",
+}
+
+
 def nome_de(chave: str) -> str:
+    from core import i18n
+    if i18n.idioma() == "en" and chave in _NOMES_EN:
+        return _NOMES_EN[chave]
     if chave in DDR:
         return DDR[chave]["nome"]
     if chave in LIMITES:
