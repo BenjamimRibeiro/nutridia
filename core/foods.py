@@ -4,7 +4,7 @@ porções típicas — para registar refeições sem precisar de saber os nutrie
 Valores baseados em tabelas de composição de alimentos (INSA/USDA), arredondados.
 Cada porção é (etiqueta, gramas). Onde um nutriente não é fonte relevante, fica 0.
 """
-from core import i18n
+from core import i18n, nutrients
 from core.nutrients import CAMPOS_NUTRIENTES
 
 _CAT_EN = {
@@ -516,9 +516,13 @@ ALIMENTOS = [
 
 
 def categorias() -> list[str]:
+    """Categorias presentes, por ordem alfabética (no idioma ativo)."""
     presentes = {a["categoria"] for a in ALIMENTOS}
-    return [c for c in CATEGORIAS if c in presentes]
+    cats = [c for c in CATEGORIAS if c in presentes]
+    return sorted(cats, key=lambda c: nutrients.normalizar(categoria_nome(c)))
 
 
 def por_categoria(categoria: str) -> list[dict]:
-    return [a for a in ALIMENTOS if a["categoria"] == categoria]
+    """Alimentos de uma categoria, por ordem alfabética do nome apresentado."""
+    itens = [a for a in ALIMENTOS if a["categoria"] == categoria]
+    return sorted(itens, key=lambda a: nutrients.normalizar(nome(a["nome"])))

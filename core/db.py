@@ -250,6 +250,12 @@ def listar_suplementos_custom(uid) -> list[dict]:
             for l in linhas]
 
 
+def atualizar_suplemento(sup_id: int, nome: str, nutrientes: dict) -> None:
+    with _engine().begin() as con:
+        con.execute(update(suplementos_custom).where(suplementos_custom.c.id == sup_id).values(
+            nome=nome, nutrientes=json.dumps(nutrientes, ensure_ascii=False)))
+
+
 def apagar_suplemento(sup_id: int) -> None:
     with _engine().begin() as con:
         con.execute(delete(suplementos_custom).where(suplementos_custom.c.id == sup_id))
@@ -350,14 +356,13 @@ def totais_do_dia(uid, dia: str) -> dict:
             if isinstance(valor, (int, float)):
                 totais[chave] = totais.get(chave, 0) + valor
     totais["agua_ml"] = totais.get("agua_ml", 0) + agua_do_dia(uid, dia)
-    # suplementos e vitamina D do sol contam nos dias ativos (com refeições) ou hoje
+    # suplementos (catálogo + próprios) e vitamina D do sol contam nos dias ativos ou hoje
     if refs or dia == date.today().strftime("%Y-%m-%d"):
+        for chave, valor in suplementos_nutrientes(uid).items():
+            totais[chave] = totais.get(chave, 0) + valor
         perfil = obter_perfil(uid)
-        if perfil:
-            for chave, valor in _sup.nutrientes_de(perfil.get("suplementos", [])).items():
-                totais[chave] = totais.get(chave, 0) + valor
-            if perfil.get("sol_habitual"):
-                totais["vit_d_ug"] = totais.get("vit_d_ug", 0) + sol.vit_d(perfil["sol_habitual"])
+        if perfil and perfil.get("sol_habitual"):
+            totais["vit_d_ug"] = totais.get("vit_d_ug", 0) + sol.vit_d(perfil["sol_habitual"])
     return totais
 
 

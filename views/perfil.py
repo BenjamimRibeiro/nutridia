@@ -127,11 +127,60 @@ def mostrar():
             st.success(_t("Guardado!", "Saved!"))
             st.rerun()
 
-    # ---- Criar suplemento próprio ----
-    with st.expander(_t("➕ Criar o meu próprio suplemento", "➕ Create my own supplement")):
+    # ---- Os meus suplementos (ver / editar / apagar) ----
+    st.divider()
+    st.subheader(_t("💊 Os meus suplementos", "💊 My supplements"))
+    st.caption(_t("Suplementos que tu criaste — vê o que têm, edita ou apaga. Para os usares "
+                  "no dia a dia, escolhe-os na lista de suplementos diários acima.",
+                  "Supplements you created — view their contents, edit or delete. To use them "
+                  "daily, pick them in the daily supplements list above."))
+    meus = db.listar_suplementos_custom(uid)
+    if not meus:
+        st.caption(_t("Ainda não criaste nenhum suplemento.", "You haven't created any yet."))
+    for s in meus:
+        na_rotina = "✅ " if s["nome"] in perfil.get("suplementos", []) else ""
+        with st.expander(f"💊 {na_rotina}{s['nome']}"):
+            if s["nutrientes"]:
+                st.markdown("**" + _t("Por dose", "Per dose") + ":** " + " · ".join(
+                    f"{nutrients.nome_de(k)} {v:.0f} {nutrients.unidade_de(k)}"
+                    for k, v in s["nutrientes"].items()))
+            else:
+                st.caption(_t("Sem valores definidos.", "No values set."))
+            with st.form(f"edit_sup_{s['id']}"):
+                novo_nome = st.text_input(_t("Nome", "Name"), s["nome"], key=f"ensup_{s['id']}")
+                st.caption(_t("Editar valores por dose:", "Edit values per dose:"))
+                cols = st.columns(3)
+                vals = {}
+                for k, campo in enumerate(_CAMPOS_SUP):
+                    with cols[k % 3]:
+                        vals[campo] = st.number_input(
+                            f"{nutrients.nome_de(campo)} ({nutrients.unidade_de(campo)})",
+                            0.0, value=float(s["nutrientes"].get(campo, 0)), step=0.5,
+                            key=f"edit_{s['id']}_{campo}")
+                cs1, cs2 = st.columns(2)
+                if cs1.form_submit_button(_t("💾 Guardar alterações", "💾 Save changes"), type="primary"):
+                    if not novo_nome.strip():
+                        st.error(_t("Dá um nome ao suplemento.", "Give it a name."))
+                    else:
+                        db.atualizar_suplemento(s["id"], novo_nome.strip(),
+                                                {c: v for c, v in vals.items() if v > 0})
+                        # se estava na rotina e mudou de nome, mantém-no na rotina
+                        rotina = perfil.get("suplementos", [])
+                        if s["nome"] in rotina and novo_nome.strip() != s["nome"]:
+                            rotina = [novo_nome.strip() if x == s["nome"] else x for x in rotina]
+                            db.guardar_preferencias(uid, perfil.get("restricoes", []),
+                                                    perfil.get("alergias", []), rotina,
+                                                    perfil.get("sol_habitual"))
+                        st.success(_t("Atualizado!", "Updated!"))
+                        st.rerun()
+                if cs2.form_submit_button(_t("🗑️ Apagar", "🗑️ Delete")):
+                    db.apagar_suplemento(s["id"])
+                    st.rerun()
+
+    with st.expander(_t("➕ Criar novo suplemento", "➕ Create new supplement")):
         with st.form("novo_sup"):
             nome_sup = st.text_input(_t("Nome do suplemento", "Supplement name"),
-                                     placeholder=_t("Ex.: O meu multivitamínico", "E.g.: My multivitamin"))
+                                     placeholder=_t("Ex.: O meu pré-treino", "E.g.: My pre-workout"))
             st.caption(_t("Indica o que **1 dose** te dá (deixa 0 no que não tiver):",
                           "Enter what **1 dose** gives you (leave 0 for none):"))
             cols = st.columns(3)
@@ -145,19 +194,11 @@ def mostrar():
                 if not nome_sup.strip():
                     st.error(_t("Dá um nome ao suplemento.", "Give the supplement a name."))
                 else:
-                    nutr = {c: v for c, v in vals.items() if v > 0}
-                    db.criar_suplemento(uid, nome_sup.strip(), nutr)
+                    db.criar_suplemento(uid, nome_sup.strip(),
+                                        {c: v for c, v in vals.items() if v > 0})
                     st.success(_t("Criado! Já o podes escolher na lista de suplementos acima.",
                                   "Created! You can now pick it in the supplements list above."))
                     st.rerun()
-
-        for s in db.listar_suplementos_custom(uid):
-            c1, c2 = st.columns([6, 1])
-            resumo = ", ".join(f"{nutrients.nome_de(k)} +{v:.0f}" for k, v in s["nutrientes"].items())
-            c1.markdown(f"💊 **{s['nome']}** — {resumo or _t('sem valores', 'no values')}")
-            if c2.button("🗑️", key=f"supdel_{s['id']}", help=_t("Apagar", "Delete")):
-                db.apagar_suplemento(s["id"])
-                st.rerun()
 
     notas = []
     if perfil.get("suplementos"):
