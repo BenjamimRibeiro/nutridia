@@ -18,11 +18,14 @@ def sequencia_atual(uid, alvos: dict) -> int:
     ainda não houver registos). O exercício do dia soma ao alvo de calorias."""
     hoje = date.today()
     inicio = 0
-    if not db.totais_do_dia(uid, hoje.strftime("%Y-%m-%d")).get("kcal", 0):
+    if not db.tem_refeicoes(uid, hoje.strftime("%Y-%m-%d")):
         inicio = 1  # ainda não comeste hoje: a sequência mantém-se a partir de ontem
     seguidos = 0
     for i in range(inicio, 365):
         dia = (hoje - timedelta(days=i)).strftime("%Y-%m-%d")
+        if db.obter_estado(uid, dia)["estado"] == "Doente":
+            seguidos += 1  # dia doente não quebra a sequência (com compreensão)
+            continue
         alvo_kcal = alvos["kcal"] + db.exercicio_kcal_do_dia(uid, dia)
         if dia_dentro_alvo(db.totais_do_dia(uid, dia), alvo_kcal):
             seguidos += 1

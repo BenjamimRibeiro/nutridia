@@ -13,7 +13,7 @@ from sqlalchemy import (Column, Float, Integer, MetaData, String, Table, Text,
                         and_, create_engine, delete, func, insert, inspect, select,
                         text, update)
 
-from core import auth
+from core import auth, suplementos as _sup
 
 PASTA_DATA = Path(__file__).resolve().parent.parent / "data"
 PASTA_FOTOS = PASTA_DATA / "fotos"
@@ -37,6 +37,7 @@ perfis = Table(
     Column("altura_cm", Float), Column("atividade", String(80)),
     Column("objetivo", String(40)), Column("ritmo_kg_semana", Float),
     Column("peso_alvo_kg", Float),
+    Column("restricoes", Text), Column("alergias", Text), Column("suplementos", Text),
 )
 refeicoes = Table(
     "refeicoes", metadata,
@@ -79,6 +80,12 @@ exercicios = Table(
     Column("nome", String(120), nullable=False), Column("duracao_min", Integer, nullable=False),
     Column("kcal", Integer, nullable=False), Column("criado_em", String(40), nullable=False),
 )
+estado_saude = Table(
+    "estado_saude", metadata,
+    Column("utilizador_id", Integer, primary_key=True),
+    Column("data", String(10), primary_key=True),
+    Column("estado", String(20), nullable=False), Column("tipo", String(40)),
+)
 definicoes = Table(
     "definicoes", metadata,
     Column("chave", String(80), primary_key=True), Column("valor", Text, nullable=False),
@@ -114,6 +121,7 @@ def _migrar(engine) -> None:
     insp = inspect(engine)
     cols_u = {c["name"] for c in insp.get_columns("utilizadores")}
     cols_r = {c["name"] for c in insp.get_columns("refeicoes")}
+    cols_p = {c["name"] for c in insp.get_columns("perfis")}
     with engine.begin() as con:
         for coluna, tipo in [("username", "VARCHAR(120)"), ("pass_hash", "VARCHAR(255)"),
                              ("pass_salt", "VARCHAR(64)")]:
@@ -121,6 +129,9 @@ def _migrar(engine) -> None:
                 con.execute(text(f"ALTER TABLE utilizadores ADD COLUMN {coluna} {tipo}"))
         if "momento" not in cols_r:
             con.execute(text("ALTER TABLE refeicoes ADD COLUMN momento VARCHAR(30)"))
+        for coluna in ("restricoes", "alergias", "suplementos"):
+            if coluna not in cols_p:
+                con.execute(text(f"ALTER TABLE perfis ADD COLUMN {coluna} TEXT"))
 
 
 def inicializar() -> None:
@@ -198,7 +209,25 @@ def guardar_perfil(uid, sexo, idade, peso_kg, altura_cm, atividade, objetivo, ri
 def obter_perfil(uid) -> dict | None:
     with _engine().connect() as con:
         linha = con.execute(select(perfis).where(perfis.c.utilizador_id == uid)).mappings().first()
-    return dict(linha) if linha else None
+    if not linha:
+        return None
+    d = dict(linha)
+    for campo in ("restricoes", "alergias", "suplementos"):
+        d[campo] = json.loads(d[campo]) if d.get(campo) else []
+    return d
+
+
+def guardar_preferencias(uid, restricoes: list, alergias: list, suplementos: list) -> None:
+    with _engine().begin() as con:
+        con.execute(update(perfis).where(perfis.c.utilizador_id == uid).values(
+            restricoes=json.dumps(restricoes, ensure_ascii=False),
+            alergias=json.dumps(alergias, ensure_ascii=False),
+            suplementos=json.dumps(suplementos, ensure_ascii=False)))
+
+
+def suplementos_nutrientes(uid) -> dict:
+    perfil = obter_perfil(uid)
+    return _sup.nutrientes_de(perfil.get("suplementos", [])) if perfil else {}
 
 
 # ---------- Refeições ----------
@@ -256,13 +285,24 @@ def apagar_refeicao(refeicao_id: int) -> None:
 
 
 def totais_do_dia(uid, dia: str) -> dict:
+    refs = refeicoes_do_dia(uid, dia)
     totais: dict[str, float] = {}
-    for ref in refeicoes_do_dia(uid, dia):
+    for ref in refs:
         for chave, valor in ref["nutrientes"].items():
             if isinstance(valor, (int, float)):
                 totais[chave] = totais.get(chave, 0) + valor
     totais["agua_ml"] = totais.get("agua_ml", 0) + agua_do_dia(uid, dia)
+    # suplementos diários contam nos dias ativos (com refeições) ou no dia de hoje
+    if refs or dia == date.today().strftime("%Y-%m-%d"):
+        for chave, valor in suplementos_nutrientes(uid).items():
+            totais[chave] = totais.get(chave, 0) + valor
     return totais
+
+
+def tem_refeicoes(uid, dia: str) -> bool:
+    with _engine().connect() as con:
+        return con.execute(select(refeicoes.c.id).where(
+            and_(refeicoes.c.utilizador_id == uid, refeicoes.c.data == dia)).limit(1)).first() is not None
 
 
 def dias_com_registos(uid, limite: int = 30) -> list[str]:
@@ -314,6 +354,29 @@ def exercicio_kcal_do_dia(uid, dia: str) -> int:
 def apagar_exercicio(ex_id: int) -> None:
     with _engine().begin() as con:
         con.execute(delete(exercicios).where(exercicios.c.id == ex_id))
+
+
+# ---------- Estado de saúde (modo doente) ----------
+
+def definir_estado(uid, estado: str, tipo: str | None = None, dia: str | None = None) -> None:
+    dia = dia or date.today().strftime("%Y-%m-%d")
+    with _engine().begin() as con:
+        existe = con.execute(select(estado_saude.c.utilizador_id).where(
+            and_(estado_saude.c.utilizador_id == uid, estado_saude.c.data == dia))).first()
+        if existe:
+            con.execute(update(estado_saude).where(
+                and_(estado_saude.c.utilizador_id == uid, estado_saude.c.data == dia)).values(
+                estado=estado, tipo=tipo))
+        else:
+            con.execute(insert(estado_saude).values(
+                utilizador_id=uid, data=dia, estado=estado, tipo=tipo))
+
+
+def obter_estado(uid, dia: str) -> dict:
+    with _engine().connect() as con:
+        linha = con.execute(select(estado_saude).where(
+            and_(estado_saude.c.utilizador_id == uid, estado_saude.c.data == dia))).mappings().first()
+    return dict(linha) if linha else {"estado": "Saudável", "tipo": None}
 
 
 # ---------- Água ----------

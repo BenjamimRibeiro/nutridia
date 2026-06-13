@@ -1,7 +1,7 @@
 """Perfil — dados pessoais, peso-alvo e cálculo das necessidades diárias."""
 import streamlit as st
 
-from core import calc, db
+from core import calc, db, dieta, nutrients, suplementos
 from views import tema
 
 
@@ -65,3 +65,26 @@ def mostrar():
         c2.metric("Hidratos", f"{alvos['hidratos_g']} g")
         c3.metric("Gordura", f"{alvos['gordura_g']} g")
         c4.metric("Água", f"{alvos['agua_ml']} ml")
+
+        # ---- Alergias, preferências e suplementos ----
+        st.divider()
+        st.subheader("🥗 Alergias, preferências e suplementos")
+        st.caption("As alergias e preferências adaptam as **refeições inteligentes**. "
+                   "Os suplementos contam automaticamente nos teus totais diários.")
+        with st.form("form_prefs"):
+            alergias = st.multiselect("Alergias / intolerâncias", dieta.ALERGIAS,
+                                      default=perfil.get("alergias", []))
+            restricoes = st.multiselect("Preferências alimentares", dieta.PREFERENCIAS,
+                                        default=perfil.get("restricoes", []))
+            sup = st.multiselect("💊 Suplementos que tomas todos os dias",
+                                 list(suplementos.CATALOGO), default=perfil.get("suplementos", []))
+            if st.form_submit_button("💾 Guardar preferências", type="primary"):
+                db.guardar_preferencias(uid, restricoes, alergias, sup)
+                st.success("Guardado! Os suplementos passam a contar nos teus totais diários.")
+                st.rerun()
+
+        if perfil.get("suplementos"):
+            nut = suplementos.nutrientes_de(perfil["suplementos"])
+            st.caption("💊 Os teus suplementos dão por dia: " + " · ".join(
+                f"{nutrients.nome_de(c)} +{v:.0f} {nutrients.unidade_de(c)}"
+                for c, v in nut.items()))

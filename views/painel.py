@@ -5,7 +5,8 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from core import calc, db, exercicios, metas, momentos, nutrients, scores
+from core import (calc, db, doenca, exercicios, metas, momentos, nutrients, scores,
+                  sugestoes)
 from views import components, tema
 
 
@@ -98,6 +99,29 @@ def mostrar():
     alvo_kcal = alvos["kcal"] + kcal_ex
     alvos_aj = {**alvos, "kcal": alvo_kcal}
 
+    # ---- Como te sentes hoje? (modo doente) ----
+    estado = db.obter_estado(uid, hoje)
+    doente_inicial = estado["estado"] == "Doente"
+    with st.expander("🤒 Como te sentes hoje?", expanded=doente_inicial):
+        doente = st.toggle("Estou doente", value=doente_inicial, key="doente_tg")
+        tipo = None
+        if doente:
+            idx = doenca.TIPOS.index(estado["tipo"]) if estado.get("tipo") in doenca.TIPOS else 0
+            tipo = st.selectbox("O que tens?", doenca.TIPOS, index=idx, key="doente_tipo")
+        novo = "Doente" if doente else "Saudável"
+        if novo != estado["estado"] or (doente and tipo != estado.get("tipo")):
+            db.definir_estado(uid, novo, tipo)
+            estado = {"estado": novo, "tipo": tipo}
+        if doente:
+            c = doenca.conforto(tipo)
+            st.info(f"💛 As melhoras! Para **{tipo.lower()}**, conforto à base de comida:\n\n"
+                    f"🍲 **Come:** {c['alimentos']}\n\n"
+                    f"✨ {c['nutrientes']}\n\n"
+                    f"💡 {c['dica']}")
+            st.caption("Hoje a app não te martela com as metas — recupera com calma. "
+                       "⚕️ Isto é conforto alimentar, não conselho médico; se persistir, "
+                       "consulta um médico.")
+
     # ---- Sequência (streak) ----
     seq = metas.sequencia_atual(uid, alvos)
     if seq >= 2:
@@ -123,6 +147,19 @@ def mostrar():
     for chave, alvo in [("kcal", alvo_kcal), ("proteina_g", alvos["proteina_g"])]:
         fracao = min(totais.get(chave, 0) / alvo, 1.0) if alvo else 0
         st.progress(fracao, text=f"{nutrients.nome_de(chave)}: {fracao:.0%} do alvo")
+
+    # ---- Sugestão inteligente: o que comer a seguir ----
+    if estado["estado"] != "Doente" and refeicoes:
+        sug = sugestoes.para_agora(totais, alvos_aj, perfil.get("alergias", []),
+                                   perfil.get("restricoes", []))
+        if sug["alimentos"]:
+            with st.expander("🤖 Sugestão: o que comer a seguir"):
+                st.markdown(f"Faltam-te ~**{sug['falta_prot']:.0f} g de proteína** e tens "
+                            f"~**{sug['resto_kcal']:.0f} kcal** disponíveis hoje. Que tal:")
+                for a in sug["alimentos"]:
+                    st.markdown(f"- 🍴 **{a['nome']}** ({a['rotulo']}, {a['gramas']} g) → "
+                                f"+{a['proteina_g']:.0f} g proteína · {a['kcal']:.0f} kcal")
+                st.caption("Sugestões que respeitam as tuas alergias e preferências (Perfil).")
 
     # ---- Água ----
     st.subheader("💧 Água")
