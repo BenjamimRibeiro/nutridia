@@ -1,6 +1,6 @@
 """Registar refeição — alimentos comuns/próprios ou pesquisa OFF, favoritos e
 repetição de refeições. Tu só dizes o quê e quanto; a app calcula os nutrientes."""
-from datetime import datetime
+from datetime import date, datetime, time
 
 import streamlit as st
 
@@ -103,6 +103,26 @@ def mostrar():
                            index=momentos.MOMENTOS.index(momentos.sugerir()),
                            format_func=momentos.nome)
 
+    # ---- Quando comeste? (permite registar refeições de outro dia/hora) ----
+    with st.expander(_t("🕒 Comeste noutra altura? (por defeito: agora)",
+                        "🕒 Eaten at another time? (default: now)")):
+        st.caption(_t("Esqueceste-te de registar ontem? Escolhe o dia e a hora reais — "
+                      "a refeição vai parar ao sítio certo no Painel e no Histórico.",
+                      "Forgot to log yesterday? Pick the real day and time — the meal will "
+                      "land in the right place on the Dashboard and History."))
+        cd, ch = st.columns(2)
+        dia_ref = cd.date_input(_t("Dia da refeição", "Meal day"), value=date.today(),
+                                max_value=date.today(), format="DD/MM/YYYY", key="reg_dia")
+        hora_ref = ch.time_input(_t("Hora", "Time"), value=datetime.now().time().replace(second=0),
+                                 step=300, key="reg_hora")
+    dia_str = dia_ref.strftime("%Y-%m-%d")
+    hora_str = hora_ref.strftime("%H:%M")
+    if dia_ref != date.today():
+        st.info(_t(f"📅 Esta refeição será registada em **{dia_ref.strftime('%d/%m/%Y')}** "
+                   f"às **{hora_str}**.",
+                   f"📅 This meal will be logged on **{dia_ref.strftime('%d/%m/%Y')}** "
+                   f"at **{hora_str}**."))
+
     foto_bytes = None
     with st.expander(_t("📷 Adicionar foto (opcional)", "📷 Add a photo (optional)")):
         foto = st.file_uploader(_t("Foto da refeição", "Meal photo"),
@@ -115,12 +135,17 @@ def mostrar():
     c1, c2 = st.columns(2)
     if c1.button(_t("💾 Guardar refeição", "💾 Save meal"), type="primary", use_container_width=True):
         db.guardar_refeicao(uid, nome.strip() or "Refeição", totais, itens=list(cesto),
-                            momento=momento, foto_bytes=foto_bytes)
+                            momento=momento, foto_bytes=foto_bytes, dia=dia_str, hora=hora_str)
         st.session_state["cesto"] = []
         st.session_state.pop("reg_res", None)
         st.session_state.pop("reg_foto", None)
-        st.success(_t(f"✅ «{nome}» guardada! Vê o impacto no Painel.",
-                      f"✅ “{nome}” saved! See the impact on the Dashboard."))
+        if dia_ref != date.today():
+            st.success(_t(f"✅ «{nome}» guardada em {dia_ref.strftime('%d/%m/%Y')}! "
+                          "Vê no Histórico.",
+                          f"✅ “{nome}” saved on {dia_ref.strftime('%d/%m/%Y')}! See it in History."))
+        else:
+            st.success(_t(f"✅ «{nome}» guardada! Vê o impacto no Painel.",
+                          f"✅ “{nome}” saved! See the impact on the Dashboard."))
         st.balloons()
         st.rerun()
     if c2.button(_t("⭐ Guardar como favorito", "⭐ Save as favourite"), use_container_width=True,

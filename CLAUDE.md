@@ -12,7 +12,7 @@ calorias, micronutrientes, pontuações de bem-estar e peso. **Sem IA, sem chave
 
 ## Arquitetura
 
-- `app.py` — entrada; `st.navigation` com 6 páginas-função (`views/*.mostrar()`)
+- `app.py` — entrada; `st.navigation` com as páginas-função (`views/*.mostrar()`)
 - `core/db.py` — **SQLAlchemy Core** (esquema via `Table`/`metadata.create_all`).
   Motor de `NUTRIDIA_DB_URL` (default `sqlite:///data/nutridia.db`; na nuvem = Postgres).
   SQL portável (sem `ON CONFLICT`: upserts manuais select→insert/update). `reset_engine()`
@@ -77,7 +77,13 @@ calorias, micronutrientes, pontuações de bem-estar e peso. **Sem IA, sem chave
   `adicionar_alimento(cesto, prefixo, pais, uid)` (uid ativa a categoria "⭐ Os meus"),
   `mostrar_itens(...)`, `totais(cesto)`. Keys de widgets levam `prefixo` para não colidir.
 - `views/registar.py` — além do cesto: favoritos (carregar/guardar/apagar) e copiar
-  refeição de outro dia (só refeições com `itens`).
+  refeição de outro dia (só refeições com `itens`). Expander "🕒 Comeste noutra altura?"
+  com date_input + time_input → `db.guardar_refeicao(..., dia=, hora=)` (registo retroativo;
+  `guardar_refeicao` aceita `hora` opcional, default = agora).
+- `views/explorar.py` — página SÓ de leitura: procurar 1 alimento (tabela local ou OFF) e
+  ver TODOS os nutrientes por 100 g / porção / peso à escolha, com %DDR do perfil e manchete
+  "🌟 Rico em…" (nutrientes ≥20% do alvo). Reutiliza `components.tabela_cobertura`,
+  `foods.porcao/nome`, `openfoodfacts`. Não escreve nada na BD.
 - `views/meus_alimentos.py` — criar alimento simples (valores de 1 porção → por_100g)
   e receitas (cesto de ingredientes ÷ doses). Ficam em alimentos_custom.
 - `views/metas.py` — página Progresso: streak, medalhas, projeção do peso-alvo.

@@ -279,9 +279,11 @@ def suplementos_nutrientes(uid) -> dict:
 
 def guardar_refeicao(uid, nome: str, nutrientes: dict, descricao: str = "",
                      foto_bytes: bytes | None = None, dia: str | None = None,
-                     itens: list[dict] | None = None, momento: str | None = None) -> int:
+                     itens: list[dict] | None = None, momento: str | None = None,
+                     hora: str | None = None) -> int:
     agora = datetime.now()
     dia = dia or agora.strftime("%Y-%m-%d")
+    hora = hora or agora.strftime("%H:%M")
     foto_path = None
     if foto_bytes:
         PASTA_FOTOS.mkdir(exist_ok=True)
@@ -289,7 +291,7 @@ def guardar_refeicao(uid, nome: str, nutrientes: dict, descricao: str = "",
         Path(foto_path).write_bytes(foto_bytes)
     with _engine().begin() as con:
         res = con.execute(insert(refeicoes).values(
-            utilizador_id=uid, data=dia, hora=agora.strftime("%H:%M"), nome=nome,
+            utilizador_id=uid, data=dia, hora=hora, nome=nome,
             descricao=descricao, foto_path=foto_path,
             nutrientes=json.dumps(nutrientes, ensure_ascii=False), criado_em=agora.isoformat(),
             itens=json.dumps(itens, ensure_ascii=False) if itens else None, momento=momento))

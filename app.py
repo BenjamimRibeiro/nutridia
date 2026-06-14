@@ -25,8 +25,8 @@ _is_postgres = bool(_db_url) and not str(_db_url).startswith("sqlite")
 REQUER_LOGIN = _is_postgres or str(_secret("require_login") or "").lower() in ("1", "true", "yes")
 
 from core import db, i18n
-from views import (carencias, definicoes, historico, login, metas, meus_alimentos,
-                   painel, perfil, registar, tema)
+from views import (carencias, definicoes, explorar, historico, login, metas,
+                   meus_alimentos, painel, perfil, registar, tema)
 
 db.inicializar()
 tema.aplicar()
@@ -62,6 +62,8 @@ paginas = [
             url_path="registar"),
     st.Page(meus_alimentos.mostrar, title=_t("Os meus alimentos", "My foods"), icon="🥣",
             url_path="meus-alimentos"),
+    st.Page(explorar.mostrar, title=_t("Explorar alimento", "Explore a food"), icon="🔍",
+            url_path="explorar"),
     st.Page(historico.mostrar, title=_t("Histórico", "History"), icon="📅", url_path="historico"),
     st.Page(metas.mostrar, title=_t("Progresso", "Progress"), icon="🎯", url_path="progresso"),
     st.Page(carencias.mostrar, title=_t("Carências e sintomas", "Deficiencies"), icon="🔬",
