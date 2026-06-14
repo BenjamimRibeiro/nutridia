@@ -1,7 +1,9 @@
 """Metas, sequências (streaks) e medalhas — calculadas a partir dos registos."""
 from datetime import date, timedelta
 
-from core import db, nutrients, scores
+from core import db, i18n, nutrients, scores
+
+_t = i18n.t
 
 
 def dia_dentro_alvo(totais: dict, alvo_kcal: float) -> bool:
@@ -144,12 +146,18 @@ def desafios_semanais(uid, perfil: dict, alvos: dict) -> list[dict]:
             acucar_ok += 1
 
     crus = [
-        ("💧", "Bem hidratado", "Água em dia em 5 dias", agua_ok, 5),
-        ("🥗", "Comer a sério", "3 dias saudáveis", saud, 3),
-        ("🏃", "Mexe-te", "3 treinos esta semana", sessoes, 3),
-        ("🌿", "Cheio de fibra", "Fibra na meta em 4 dias", fibra_ok, 4),
-        ("🍬", "Açúcar sob controlo", "Sem exagerar no açúcar em 5 dias", acucar_ok, 5),
-        ("📋", "Consistente", "Registar refeições em 6 dias", registados, 6),
+        ("💧", _t("Bem hidratado", "Well hydrated"),
+         _t("Água em dia em 5 dias", "Water on track on 5 days"), agua_ok, 5),
+        ("🥗", _t("Comer a sério", "Eat for real"),
+         _t("3 dias saudáveis", "3 healthy days"), saud, 3),
+        ("🏃", _t("Mexe-te", "Get moving"),
+         _t("3 treinos esta semana", "3 workouts this week"), sessoes, 3),
+        ("🌿", _t("Cheio de fibra", "Full of fibre"),
+         _t("Fibra na meta em 4 dias", "Fibre on target on 4 days"), fibra_ok, 4),
+        ("🍬", _t("Açúcar sob controlo", "Sugar under control"),
+         _t("Sem exagerar no açúcar em 5 dias", "No sugar overload on 5 days"), acucar_ok, 5),
+        ("📋", _t("Consistente", "Consistent"),
+         _t("Registar refeições em 6 dias", "Log meals on 6 days"), registados, 6),
     ]
     return [{"emoji": e, "nome": n, "desc": d, "atual": min(a, alvo), "alvo": alvo,
              "completo": a >= alvo} for e, n, d, a, alvo in crus]
@@ -176,20 +184,30 @@ def medalhas(uid, perfil: dict, alvos: dict) -> list[dict]:
             if alvo and medias7.get(chave, 0) >= alvo:
                 micros_ok += 1
 
+    d = _t("dias", "days")
+    sem_dados = _t("sem dados", "no data")
     return [
-        {"emoji": "🔥", "nome": "Em chamas", "desc": "3 dias seguidos dentro do alvo",
-         "conquistada": seq >= 3, "progresso": f"{min(seq, 3)}/3 dias"},
-        {"emoji": "🏆", "nome": "Semana perfeita", "desc": "7 dias seguidos dentro do alvo",
-         "conquistada": seq >= 7, "progresso": f"{min(seq, 7)}/7 dias"},
-        {"emoji": "🥦", "nome": "Corpo cuidado", "desc": "3 dias saudáveis seguidos",
-         "conquistada": seq_saud >= 3, "progresso": f"{min(seq_saud, 3)}/3 dias"},
-        {"emoji": "🥇", "nome": "Semana impecável", "desc": "7 dias saudáveis seguidos",
-         "conquistada": seq_saud >= 7, "progresso": f"{min(seq_saud, 7)}/7 dias"},
-        {"emoji": "💪", "nome": "Semana proteica", "desc": "Média de proteína na meta (7 dias)",
+        {"emoji": "🔥", "nome": _t("Em chamas", "On fire"),
+         "desc": _t("3 dias seguidos dentro do alvo", "3 days in a row within target"),
+         "conquistada": seq >= 3, "progresso": f"{min(seq, 3)}/3 {d}"},
+        {"emoji": "🏆", "nome": _t("Semana perfeita", "Perfect week"),
+         "desc": _t("7 dias seguidos dentro do alvo", "7 days in a row within target"),
+         "conquistada": seq >= 7, "progresso": f"{min(seq, 7)}/7 {d}"},
+        {"emoji": "🥦", "nome": _t("Corpo cuidado", "Well-cared body"),
+         "desc": _t("3 dias saudáveis seguidos", "3 healthy days in a row"),
+         "conquistada": seq_saud >= 3, "progresso": f"{min(seq_saud, 3)}/3 {d}"},
+        {"emoji": "🥇", "nome": _t("Semana impecável", "Flawless week"),
+         "desc": _t("7 dias saudáveis seguidos", "7 healthy days in a row"),
+         "conquistada": seq_saud >= 7, "progresso": f"{min(seq_saud, 7)}/7 {d}"},
+        {"emoji": "💪", "nome": _t("Semana proteica", "Protein week"),
+         "desc": _t("Média de proteína na meta (7 dias)", "Average protein on target (7 days)"),
          "conquistada": dias7 >= 3 and medias7.get("proteina_g", 0) >= alvos["proteina_g"],
-         "progresso": f"{medias7.get('proteina_g', 0):.0f}/{alvos['proteina_g']} g" if dias7 else "sem dados"},
-        {"emoji": "💧", "nome": "Hidratado", "desc": "Água em dia em 5 dos últimos 7 dias",
-         "conquistada": dias_agua >= 5, "progresso": f"{dias_agua}/7 dias"},
-        {"emoji": "🌈", "nome": "Arco-íris", "desc": "≥12 vitaminas/minerais na meta (média 7 dias)",
+         "progresso": f"{medias7.get('proteina_g', 0):.0f}/{alvos['proteina_g']} g" if dias7 else sem_dados},
+        {"emoji": "💧", "nome": _t("Hidratado", "Hydrated"),
+         "desc": _t("Água em dia em 5 dos últimos 7 dias", "Water on track on 5 of the last 7 days"),
+         "conquistada": dias_agua >= 5, "progresso": f"{dias_agua}/7 {d}"},
+        {"emoji": "🌈", "nome": _t("Arco-íris", "Rainbow"),
+         "desc": _t("≥12 vitaminas/minerais na meta (média 7 dias)",
+                    "≥12 vitamins/minerals on target (7-day avg)"),
          "conquistada": micros_ok >= 12, "progresso": f"{micros_ok}/{len(nutrients.DDR)}"},
     ]

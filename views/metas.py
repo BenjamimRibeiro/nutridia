@@ -6,6 +6,8 @@ import streamlit as st
 from core import calc, db, i18n, metas, nutrients, scores
 from views import tema
 
+_t = i18n.t
+
 
 def mostrar():
     tema.cabecalho("🎯", i18n.t("Progresso", "Progress"),
@@ -15,7 +17,8 @@ def mostrar():
     uid = st.session_state.get("uid")
     perfil = db.obter_perfil(uid)
     if not perfil:
-        st.info("Preenche primeiro o teu **Perfil** para acompanhares o teu progresso.")
+        st.info(_t("Preenche primeiro o teu **Perfil** para acompanhares o teu progresso.",
+                   "Fill in your **Profile** first to track your progress."))
         return
 
     alvos = calc.alvos_diarios(perfil)
@@ -23,21 +26,31 @@ def mostrar():
     # ---- Sequências ----
     seq = metas.sequencia_atual(uid, alvos)
     seq_saud = metas.sequencia_saudavel(uid, alvos)
+    dia_s = _t("dia(s)", "day(s)")
     c1, c2 = st.columns(2)
-    c1.metric("🔥 Calorias no alvo", f"{seq} dia(s)",
-              help="Dias seguidos com as calorias entre 80% e 110% do alvo.")
-    c2.metric("🥗 Dias saudáveis", f"{seq_saud} dia(s)",
-              help="Dias seguidos a sério: calorias na zona E proteína E fibra ok E sem "
-                   "rebentar os limites de açúcar/sódio/gordura saturada.")
+    c1.metric(_t("🔥 Calorias no alvo", "🔥 Calories on target"), f"{seq} {dia_s}",
+              help=_t("Dias seguidos com as calorias entre 80% e 110% do alvo.",
+                      "Days in a row with calories between 80% and 110% of target."))
+    c2.metric(_t("🥗 Dias saudáveis", "🥗 Healthy days"), f"{seq_saud} {dia_s}",
+              help=_t("Dias seguidos a sério: calorias na zona E proteína E fibra ok E sem "
+                      "rebentar os limites de açúcar/sódio/gordura saturada.",
+                      "Real days in a row: calories in zone AND protein AND fibre ok AND without "
+                      "breaking the sugar/sodium/saturated fat limits."))
     if seq_saud >= 3:
-        st.success(f"💚 Estás a cuidar mesmo do teu corpo — {seq_saud} dia(s) saudáveis seguidos!")
+        st.success(_t(f"💚 Estás a cuidar mesmo do teu corpo — {seq_saud} dia(s) saudáveis seguidos!",
+                      f"💚 You're really taking care of your body — {seq_saud} healthy day(s) in a row!"))
     elif seq >= 1:
-        st.info("A sequência de **calorias** é fácil de manter; a de **dias saudáveis** é a "
-                "que mostra que estás a cuidar do corpo (não basta não passar das calorias — "
-                "conta a qualidade). Tenta fazê-las crescer juntas! 🌱")
+        st.info(_t("A sequência de **calorias** é fácil de manter; a de **dias saudáveis** é a "
+                   "que mostra que estás a cuidar do corpo (não basta não passar das calorias — "
+                   "conta a qualidade). Tenta fazê-las crescer juntas! 🌱",
+                   "The **calories** streak is easy to keep; the **healthy days** streak is the one "
+                   "that shows you're caring for your body (not exceeding calories isn't enough — "
+                   "quality counts). Try to grow them together! 🌱"))
     else:
-        st.info("Fica dentro do alvo de calorias e come equilibrado hoje para começares as "
-                "tuas sequências! 🌱")
+        st.info(_t("Fica dentro do alvo de calorias e come equilibrado hoje para começares as "
+                   "tuas sequências! 🌱",
+                   "Stay within your calorie target and eat balanced today to start your "
+                   "streaks! 🌱"))
 
     # ---- Desafios da semana ----
     st.divider()
@@ -60,32 +73,39 @@ def mostrar():
     st.subheader(i18n.t("📊 Resumo da semana", "📊 Week summary"))
     r = metas.resumo_semanal(uid, perfil, alvos)
     if r["dias"] == 0:
-        st.caption("Ainda sem registos esta semana — regista refeições e o boletim aparece aqui.")
+        st.caption(_t("Ainda sem registos esta semana — regista refeições e o boletim aparece aqui.",
+                      "No logs yet this week — log meals and the summary will appear here."))
     else:
+        do_alvo = _t("do alvo", "of target")
         c1, c2, c3 = st.columns(3)
-        c1.metric("Dias registados", f"{r['dias']}/7")
-        c2.metric("🔥 Dias no alvo", f"{r['no_alvo']}/{r['dias']}")
-        c3.metric("🥗 Dias saudáveis", f"{r['saudaveis']}/{r['dias']}")
+        c1.metric(_t("Dias registados", "Days logged"), f"{r['dias']}/7")
+        c2.metric(_t("🔥 Dias no alvo", "🔥 Days on target"), f"{r['no_alvo']}/{r['dias']}")
+        c3.metric(_t("🥗 Dias saudáveis", "🥗 Healthy days"), f"{r['saudaveis']}/{r['dias']}")
         c1, c2, c3 = st.columns(3)
-        c1.metric("Média de calorias", f"{r['kcal']:.0f} kcal")
-        c2.metric("Média de proteína", f"{r['proteina_g']:.0f} g")
-        c3.metric("Média de água", f"{r['agua_ml']:.0f} ml")
+        c1.metric(_t("Média de calorias", "Avg. calories"), f"{r['kcal']:.0f} kcal")
+        c2.metric(_t("Média de proteína", "Avg. protein"), f"{r['proteina_g']:.0f} g")
+        c3.metric(_t("Média de água", "Avg. water"), f"{r['agua_ml']:.0f} ml")
 
         if r["melhor"] and r["pior"]:
             mc, mf = r["melhor"]
             pc, pf = r["pior"]
-            st.markdown(f"🟢 **Onde brilhas:** {nutrients.nome_de(mc)} ({min(mf, 1):.0%} do alvo) "
-                        f"· 🔴 **A melhorar:** {nutrients.nome_de(pc)} ({min(pf, 1):.0%} do alvo)")
+            st.markdown(f"🟢 **{_t('Onde brilhas:', 'Where you shine:')}** "
+                        f"{nutrients.nome_de(mc)} ({min(mf, 1):.0%} {do_alvo}) "
+                        f"· 🔴 **{_t('A melhorar:', 'To improve:')}** "
+                        f"{nutrients.nome_de(pc)} ({min(pf, 1):.0%} {do_alvo})")
         if r["pontuacoes"]:
             top3 = sorted(r["pontuacoes"].items(), key=lambda x: -x[1])[:3]
             baixo = min(r["pontuacoes"].items(), key=lambda x: x[1])
-            fortes = " · ".join(f"{scores.PONTUACOES[n]['emoji']} {n} {v}%" for n, v in top3)
-            st.markdown(f"**Bem-estar médio — melhores:** {fortes}")
-            st.caption(f"A área a precisar de mais atenção: "
-                       f"{scores.PONTUACOES[baixo[0]]['emoji']} {baixo[0]} ({baixo[1]}%).")
+            fortes = " · ".join(f"{scores.PONTUACOES[n]['emoji']} {scores.nome(n)} {v}%"
+                                for n, v in top3)
+            st.markdown(f"**{_t('Bem-estar médio — melhores:', 'Average wellbeing — best:')}** {fortes}")
+            st.caption(_t(f"A área a precisar de mais atenção: "
+                          f"{scores.PONTUACOES[baixo[0]]['emoji']} {scores.nome(baixo[0])} ({baixo[1]}%).",
+                          f"The area needing most attention: "
+                          f"{scores.PONTUACOES[baixo[0]]['emoji']} {scores.nome(baixo[0])} ({baixo[1]}%)."))
 
     # ---- Medalhas ----
-    st.subheader("🏅 Medalhas")
+    st.subheader(_t("🏅 Medalhas", "🏅 Medals"))
     lista = metas.medalhas(uid, perfil, alvos)
     cols = st.columns(3)
     for k, m in enumerate(lista):
@@ -103,28 +123,40 @@ def mostrar():
 
     # ---- Projeção de peso ----
     st.divider()
-    st.subheader("⚖️ Caminho até ao peso-alvo")
+    st.subheader(_t("⚖️ Caminho até ao peso-alvo", "⚖️ Path to your target weight"))
     historico = db.historico_peso(uid)
     proj = calc.projecao_peso(perfil, historico)
 
     if proj is None:
-        st.info("Define um **peso-alvo** no teu Perfil para veres aqui a projeção de quando "
-                "o vais atingir, ao teu ritmo.")
+        st.info(_t("Define um **peso-alvo** no teu Perfil para veres aqui a projeção de quando "
+                   "o vais atingir, ao teu ritmo.",
+                   "Set a **target weight** in your Profile to see here a projection of when "
+                   "you'll reach it, at your pace."))
     elif proj.get("atingido"):
-        st.success(f"🎉 Já estás no teu peso-alvo ({proj['alvo']:.0f} kg)! Parabéns!")
+        st.success(_t(f"🎉 Já estás no teu peso-alvo ({proj['alvo']:.0f} kg)! Parabéns!",
+                      f"🎉 You're already at your target weight ({proj['alvo']:.0f} kg)! Congrats!"))
     else:
         c1, c2, c3 = st.columns(3)
-        c1.metric("Peso atual", f"{proj['atual']:.1f} kg")
-        c2.metric("Peso-alvo", f"{proj['alvo']:.1f} kg",
+        c1.metric(_t("Peso atual", "Current weight"), f"{proj['atual']:.1f} kg")
+        c2.metric(_t("Peso-alvo", "Target weight"), f"{proj['alvo']:.1f} kg",
                   delta=f"{proj['delta']:+.1f} kg", delta_color="off")
-        c3.metric("Faltam", f"{abs(proj['delta']):.1f} kg")
+        c3.metric(_t("Faltam", "To go"), f"{abs(proj['delta']):.1f} kg")
         if proj["incoerente"]:
-            st.warning("⚠️ O teu peso-alvo vai no sentido contrário ao teu objetivo definido "
-                       "no Perfil. Confirma o objetivo (emagrecer/engordar) e o peso-alvo.")
+            st.warning(_t("⚠️ O teu peso-alvo vai no sentido contrário ao teu objetivo definido "
+                          "no Perfil. Confirma o objetivo (emagrecer/engordar) e o peso-alvo.",
+                          "⚠️ Your target weight goes the opposite way to the goal set in your "
+                          "Profile. Check the goal (lose/gain) and the target weight."))
         else:
             data_txt = proj["data"].strftime("%d/%m/%Y")
-            st.success(f"📅 Ao ritmo atual (~{proj['ritmo']:.2f} kg/semana, pela "
-                       f"{proj['fonte']}), atinges o teu objetivo por volta de **{data_txt}** "
-                       f"(~{proj['semanas']:.0f} semanas).")
-        st.caption("A projeção usa a tua tendência real de peso quando há registos suficientes; "
-                   "caso contrário, usa o ritmo planeado no Perfil. Regista o peso no Histórico.")
+            fonte = _t("tendência real", "actual trend") if proj["fonte"] == "tendência real" \
+                else _t("ritmo planeado", "planned pace")
+            st.success(_t(f"📅 Ao ritmo atual (~{proj['ritmo']:.2f} kg/semana, pela "
+                          f"{fonte}), atinges o teu objetivo por volta de **{data_txt}** "
+                          f"(~{proj['semanas']:.0f} semanas).",
+                          f"📅 At the current pace (~{proj['ritmo']:.2f} kg/week, by "
+                          f"{fonte}), you'll reach your goal around **{data_txt}** "
+                          f"(~{proj['semanas']:.0f} weeks)."))
+        st.caption(_t("A projeção usa a tua tendência real de peso quando há registos suficientes; "
+                      "caso contrário, usa o ritmo planeado no Perfil. Regista o peso no Histórico.",
+                      "The projection uses your actual weight trend when there's enough data; "
+                      "otherwise it uses the planned pace in your Profile. Log weight in History."))

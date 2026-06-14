@@ -154,6 +154,119 @@ CARENCIAS = {
 }
 
 
+# Tradução EN do texto de carências (mesmas chaves de CARENCIAS)
+_CARENCIAS_EN = {
+    "proteina_g": {
+        "curto_prazo": "Constant hunger, slow recovery after exercise, lack of strength.",
+        "longo_prazo": "Muscle loss, brittle hair and nails, weaker immunity.",
+        "fontes": "Meat, fish, eggs, legumes, dairy, tofu.",
+    },
+    "fibra_g": {
+        "curto_prazo": "Constipation, heavy digestion, hunger soon after eating.",
+        "longo_prazo": "Higher cholesterol, worse gut health, higher type 2 diabetes risk.",
+        "fontes": "Oats, legumes, fruit with skin, vegetables, wholegrain bread.",
+    },
+    "agua_ml": {
+        "curto_prazo": "Headaches, low energy, dull skin, poor concentration.",
+        "longo_prazo": "Kidney stones, poor digestion, aged skin.",
+        "fontes": "Water, unsweetened tea, soup, water-rich fruit (watermelon, orange).",
+    },
+    "ferro_mg": {
+        "curto_prazo": "Tiredness, paleness, poor concentration, cold hands and feet.",
+        "longo_prazo": "Anaemia, hair loss, weak immunity, breathlessness on effort.",
+        "fontes": "Red meat, shellfish, legumes, spinach (with vit. C for better absorption).",
+    },
+    "magnesio_mg": {
+        "curto_prazo": "Cramps, muscle tension, worse sleep quality, irritability.",
+        "longo_prazo": "Frequent migraines, palpitations, weaker bones.",
+        "fontes": "Nuts, seeds, cocoa/dark chocolate, legumes, oats.",
+    },
+    "potassio_mg": {
+        "curto_prazo": "Muscle weakness, cramps, constipation, fatigue.",
+        "longo_prazo": "High blood pressure, higher kidney stone risk.",
+        "fontes": "Banana, potato, beans, avocado, spinach, orange.",
+    },
+    "calcio_mg": {
+        "curto_prazo": "Tingling, muscle cramps, brittle nails.",
+        "longo_prazo": "Osteoporosis, weak teeth, higher fracture risk.",
+        "fontes": "Dairy, kale, canned sardines (with bones), almonds.",
+    },
+    "zinco_mg": {
+        "curto_prazo": "Dulled taste and smell, wounds that heal slowly.",
+        "longo_prazo": "Hair loss, dry skin/acne, weak immunity.",
+        "fontes": "Meat, oysters and shellfish, pumpkin seeds, chickpeas.",
+    },
+    "vit_a_ug": {
+        "curto_prazo": "Worse night vision, dry eyes.",
+        "longo_prazo": "Dry skin, frequent respiratory infections.",
+        "fontes": "Carrot, sweet potato, liver, eggs, spinach.",
+    },
+    "vit_c_mg": {
+        "curto_prazo": "Sensitive gums, slow healing, tiredness.",
+        "longo_prazo": "Weak immunity, dull skin (less collagen), easy bruising.",
+        "fontes": "Orange, kiwi, peppers, broccoli, strawberries.",
+    },
+    "vit_d_ug": {
+        "curto_prazo": "Tiredness, low mood, muscle aches.",
+        "longo_prazo": "Weak bones, reduced immunity, low mood in winter.",
+        "fontes": "Sun (15-20 min/day), oily fish (salmon, sardines), eggs.",
+    },
+    "vit_e_mg": {
+        "curto_prazo": "Rarely gives immediate signs.",
+        "longo_prazo": "Muscle weakness, worse cell protection (antioxidant).",
+        "fontes": "Olive oil, almonds, sunflower seeds, avocado.",
+    },
+    "vit_k_ug": {
+        "curto_prazo": "Easy bruising, bleeding gums.",
+        "longo_prazo": "Weaker bones, worse blood clotting.",
+        "fontes": "Kale, spinach, broccoli, Brussels sprouts.",
+    },
+    "vit_b1_mg": {
+        "curto_prazo": "Tiredness, irritability, lack of appetite.",
+        "longo_prazo": "Memory and nervous system problems.",
+        "fontes": "Wholegrains, pork, legumes, seeds.",
+    },
+    "vit_b2_mg": {
+        "curto_prazo": "Cracked lips, eyes sensitive to light.",
+        "longo_prazo": "Anaemia, skin problems.",
+        "fontes": "Dairy, eggs, almonds, mushrooms.",
+    },
+    "vit_b3_mg": {
+        "curto_prazo": "Fatigue, headaches, indigestion.",
+        "longo_prazo": "Skin, digestion and memory problems.",
+        "fontes": "Chicken, tuna, peanuts, mushrooms.",
+    },
+    "vit_b6_mg": {
+        "curto_prazo": "Low mood, irritability, lack of focus.",
+        "longo_prazo": "Anaemia, tingling in hands and feet.",
+        "fontes": "Chickpeas, banana, salmon, potato, chicken.",
+    },
+    "folato_ug": {
+        "curto_prazo": "Tiredness, breathlessness, irritability.",
+        "longo_prazo": "Anaemia, high homocysteine levels (heart).",
+        "fontes": "Leafy green vegetables, legumes, orange, avocado.",
+    },
+    "vit_b12_ug": {
+        "curto_prazo": "Extreme tiredness, tingling, memory lapses.",
+        "longo_prazo": "Anaemia, nervous system damage (can be irreversible).",
+        "fontes": "Meat, fish, eggs, dairy (vegans: supplement).",
+    },
+    "omega3_g": {
+        "curto_prazo": "Dry skin, reduced focus, more unstable mood.",
+        "longo_prazo": "Worse heart and brain health, more inflammation.",
+        "fontes": "Salmon, sardines, mackerel, walnuts, flax/chia seeds.",
+    },
+}
+
+
+def carencia(chave: str) -> dict | None:
+    """Texto de carência (curto_prazo/longo_prazo/fontes) no idioma ativo."""
+    from core import i18n
+    if i18n.idioma() == "en" and chave in _CARENCIAS_EN:
+        return _CARENCIAS_EN[chave]
+    return CARENCIAS.get(chave)
+
+
 def ddr_para(chave: str, sexo: str) -> float:
     """Dose diária recomendada de um nutriente para o sexo do utilizador."""
     info = DDR[chave]

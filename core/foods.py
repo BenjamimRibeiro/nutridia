@@ -31,7 +31,8 @@ _NOMES_EN = {
     "Ovo": "Egg", "Peito de frango grelhado": "Grilled chicken breast", "Bife de vaca": "Beef steak",
     "Carne de porco (lombo)": "Pork loin", "Salmão": "Salmon", "Atum em água (lata)": "Canned tuna",
     "Bacalhau cozido": "Cod (boiled)", "Sardinha": "Sardines", "Camarão": "Shrimp",
-    "Fiambre de frango": "Chicken ham", "Hambúrguer de vaca": "Beef burger",
+    "Fiambre de frango": "Chicken ham", "Fiambre de porco": "Pork ham",
+    "Hambúrguer de vaca": "Beef burger",
     "Hambúrguer de porco": "Pork burger",
     "Leite meio-gordo": "Semi-skimmed milk", "Iogurte natural": "Plain yogurt",
     "Queijo de cabra": "Goat cheese", "Queijo fresco": "Fresh cheese", "Queijo mozzarella": "Mozzarella",
@@ -157,6 +158,9 @@ ALIMENTOS = [
        zinco_mg=1.6, vit_b12_ug=1.1),
     _f("Fiambre de frango", "Proteínas", [("1 fatia", 20), ("2 fatias", 40)],
        kcal=110, proteina_g=18, gordura_g=3.5, gordura_saturada_g=1, sodio_mg=950, ferro_mg=0.8),
+    _f("Fiambre de porco", "Proteínas", [("1 fatia", 20), ("2 fatias", 40)],
+       kcal=145, proteina_g=18, gordura_g=8, gordura_saturada_g=2.7, sodio_mg=1100, ferro_mg=0.9,
+       zinco_mg=1.5, vit_b1_mg=0.5, vit_b12_ug=0.7),
 
     # ---------- Lacticínios ----------
     _f("Leite meio-gordo", "Lacticínios", [("1 copo", 200), ("Chávena", 250)],
