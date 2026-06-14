@@ -1,7 +1,7 @@
 """Os meus alimentos — criar alimentos próprios e receitas reutilizáveis."""
 import streamlit as st
 
-from core import calc, db, i18n, nutrients
+from core import calc, db, foods, i18n, nutrients
 from views import builder, components, tema
 
 _t = i18n.t
@@ -113,7 +113,8 @@ def mostrar():
             rotulo, g = alimento["porcoes"][0]
             nut = nutrients.escalar(alimento["por_100g"], g)
             c1, c2 = st.columns([6, 1])
-            with c1.popover(f"🥣 {alimento['nome']} ({rotulo}, {g} g) — {nut['kcal']:.0f} kcal"):
+            with c1.popover(f"🥣 {alimento['nome']} ({foods.porcao(rotulo)}, {g} g) — "
+                            f"{nut['kcal']:.0f} kcal"):
                 st.markdown(components.lista_nutrientes(nut, sexo, alvos))
             if c2.button("🗑️", key=f"del_{alimento['id']}", help=_t("Apagar", "Delete")):
                 db.apagar_alimento(alimento["id"])

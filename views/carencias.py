@@ -149,7 +149,8 @@ def mostrar():
             for pontuacao, alimento, rotulo, gramas, cobertura in sugestoes[:6]:
                 partes = [f"{nutrients.nome_de(c)} **+{f:.0%}**"
                           for c, f in sorted(cobertura.items(), key=lambda x: -x[1])[:4]]
-                st.markdown(f"- **{foods.nome(alimento['nome'])}** ({rotulo}, {gramas} g) → "
+                st.markdown(f"- **{foods.nome(alimento['nome'])}** "
+                            f"({foods.porcao(rotulo)}, {gramas} g) → "
                             + " · ".join(partes))
 
             # ideia de refeição: melhor alimento de até 3 categorias diferentes

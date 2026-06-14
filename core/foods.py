@@ -74,6 +74,41 @@ def nome(nome_pt: str) -> str:
     return _NOMES_EN.get(nome_pt, nome_pt) if i18n.idioma() == "en" else nome_pt
 
 
+# Tradução das etiquetas de porção. Porções de pratos típicos (1 francesinha,
+# 2 pataniscas…) ficam sem entrada → mantêm-se em PT.
+_PORCOES_EN = {
+    "1 fatia": "1 slice", "2 fatias": "2 slices", "1 papo-seco": "1 bread roll",
+    "1 tosta": "1 toast", "1 concha": "1 ladle", "Concha": "Ladle", "Prato": "Plate",
+    "1 prato": "1 plate", "Acompanhamento": "Side", "3 colheres de sopa": "3 tablespoons",
+    "1 colher de sopa": "1 tablespoon", "1 colher de chá": "1 teaspoon",
+    "1 colher (picada)": "1 spoon (chopped)", "Taça": "Bowl", "1 taça": "1 bowl",
+    "1 tigela": "1 bowl", "1 batata média": "1 medium potato", "Porção": "Portion",
+    "1 porção": "1 portion", "Porção ralada": "Grated portion", "1 ovo M": "1 egg M",
+    "1 ovo L": "1 egg L", "2 ovos": "2 eggs", "1 peito pequeno": "1 small breast",
+    "Bife": "Steak", "1 hambúrguer": "1 burger", "1 hambúrguer grande": "1 large burger",
+    "Posta": "Fillet", "1 lata escorrida": "1 drained can", "1 lata": "1 can",
+    "3 sardinhas": "3 sardines", "1 copo": "1 glass", "Chávena": "Cup", "1 chávena": "1 cup",
+    "1 iogurte": "1 yogurt", "1 banana": "1 banana", "1 maçã": "1 apple",
+    "1 laranja": "1 orange", "1 pera": "1 pear", "1 cacho pequeno": "1 small bunch",
+    "1 kiwi": "1 kiwi", "1 cenoura": "1 carrot", "1 tomate": "1 tomato",
+    "1 fio": "1 drizzle", "Mão-cheia": "Handful", "Meio abacate": "Half avocado",
+    "1 quadrado": "1 square", "Meia tablete": "Half bar", "2 bolachas": "2 biscuits",
+    "4 bolachas": "4 biscuits", "Saco pequeno": "Small bag", "1 croissant": "1 croissant",
+    "1 café (30 ml)": "1 espresso (30 ml)", "1 imperial": "1 small beer",
+    "1 caneca": "1 pint", "1 garrafa": "1 bottle", "1 quarto": "1 quarter",
+    "1 omelete": "1 omelette", "1 pastel": "1 pastry", "1 rissol": "1 rissole",
+    "1 croquete": "1 croquette", "1 bola": "1 ball", "1 tosta mista": "1 toastie",
+    "1 queijo fresco": "1 fresh cheese", "1 cebola média": "1 medium onion",
+    "1 dente": "1 clove", "3 dentes": "3 cloves", "1 pimento": "1 pepper",
+    "1 dose": "1 serving",  # alimentos/receitas próprios
+}
+
+
+def porcao(rotulo: str) -> str:
+    """Etiqueta de porção no idioma ativo (pratos típicos ficam em PT)."""
+    return _PORCOES_EN.get(rotulo, rotulo) if i18n.idioma() == "en" else rotulo
+
+
 def _f(nome: str, categoria: str, porcoes: list[tuple[str, int]], **nutrientes) -> dict:
     base = {k: 0.0 for k in CAMPOS_NUTRIENTES}
     base.update(nutrientes)

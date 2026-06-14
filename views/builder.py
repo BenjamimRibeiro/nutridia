@@ -83,7 +83,7 @@ def _aba_comuns(cesto: list, prefixo: str, uid) -> None:
 
     porcoes = alimento["porcoes"]
     custom = _t("✏️ Peso personalizado", "✏️ Custom weight")
-    etiquetas = [f"{lbl} ({g} g)" for lbl, g in porcoes] + [custom]
+    etiquetas = [f"{foods.porcao(lbl)} ({g} g)" for lbl, g in porcoes] + [custom]
     escolha = st.radio(_t("Porção", "Portion"), etiquetas, horizontal=True, key=f"{prefixo}_po_{cat}_{idx}")
     if escolha == custom:
         gramas = st.number_input(_t("Peso (g/ml)", "Weight (g/ml)"), 1.0, 2000.0, 100.0, step=10.0,
