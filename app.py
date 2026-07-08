@@ -26,7 +26,7 @@ REQUER_LOGIN = _is_postgres or str(_secret("require_login") or "").lower() in ("
 
 from core import db, i18n
 from views import (carencias, definicoes, explorar, historico, login, metas,
-                   meus_alimentos, painel, perfil, registar, tema)
+                   meus_alimentos, painel, perfil, plano, registar, tema)
 
 db.inicializar()
 tema.aplicar()
@@ -65,6 +65,8 @@ paginas = [
     st.Page(explorar.mostrar, title=_t("Explorar alimento", "Explore a food"), icon="🔍",
             url_path="explorar"),
     st.Page(historico.mostrar, title=_t("Histórico", "History"), icon="📅", url_path="historico"),
+    st.Page(plano.mostrar, title=_t("Plano semanal", "Weekly plan"), icon="🗓️",
+            url_path="plano"),
     st.Page(metas.mostrar, title=_t("Progresso", "Progress"), icon="🎯", url_path="progresso"),
     st.Page(carencias.mostrar, title=_t("Carências e sintomas", "Deficiencies"), icon="🔬",
             url_path="carencias"),
