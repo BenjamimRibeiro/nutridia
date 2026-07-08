@@ -19,7 +19,7 @@ CATALOGO = {
     "Ferro": {"ferro_mg": 14},
     "Cálcio": {"calcio_mg": 500},
     "Vitamina B12": {"vit_b12_ug": 25},
-    "Creatina (5 g)": {},
+    "Creatina (5 g)": {"creatina_g": 5.0},
 }
 
 

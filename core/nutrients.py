@@ -282,6 +282,7 @@ _NOMES_EN = {
     "vit_b1_mg": "Vitamin B1 (thiamine)", "vit_b2_mg": "Vitamin B2 (riboflavin)",
     "vit_b3_mg": "Vitamin B3 (niacin)", "vit_b6_mg": "Vitamin B6", "folato_ug": "Folate (B9)",
     "vit_b12_ug": "Vitamin B12", "omega3_g": "Omega-3", "agua_ml": "Water", "cafeina_mg": "Caffeine",
+    "creatina_g": "Creatine",
 }
 
 
@@ -294,7 +295,7 @@ def nome_de(chave: str) -> str:
     if chave in LIMITES:
         return LIMITES[chave]["nome"]
     return {"kcal": "Calorias", "proteina_g": "Proteína", "hidratos_g": "Hidratos de carbono",
-            "gordura_g": "Gordura", "agua_ml": "Água"}.get(chave, chave)
+            "gordura_g": "Gordura", "agua_ml": "Água", "creatina_g": "Creatina"}.get(chave, chave)
 
 
 def unidade_de(chave: str) -> str:
@@ -303,7 +304,7 @@ def unidade_de(chave: str) -> str:
     if chave in LIMITES:
         return LIMITES[chave]["unidade"]
     return {"kcal": "kcal", "proteina_g": "g", "hidratos_g": "g",
-            "gordura_g": "g", "agua_ml": "ml"}.get(chave, "")
+            "gordura_g": "g", "agua_ml": "ml", "creatina_g": "g"}.get(chave, "")
 
 
 def normalizar(texto: str) -> str:

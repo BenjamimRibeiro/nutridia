@@ -159,10 +159,10 @@ def mostrar():
                             f"{nutrients.nome_de(k)} {v:.0f} {nutrients.unidade_de(k)}"
                             for k, v in fonte.items()))
                     else:
-                        st.caption(_t("A app não segue nutrientes deste (ex.: a creatina não é "
-                                      "vitamina nem mineral).",
-                                      "The app doesn't track nutrients for this one (e.g. creatine "
-                                      "isn't a vitamin or mineral)."))
+                        st.caption(_t("Este suplemento não tem valores definidos — edita-o em "
+                                      "«Os meus suplementos» para contar nos totais.",
+                                      "This supplement has no values set — edit it under "
+                                      "“My supplements” so it counts in your totals."))
                 with c2:
                     novas_doses[nome_s] = st.number_input(
                         _t("Doses/dia", "Doses/day"), min_value=0.0, max_value=20.0,
