@@ -2,20 +2,23 @@
 e sugestões de alimentos para repor."""
 from datetime import date, timedelta
 
+import altair as alt
+import pandas as pd
 import streamlit as st
 
 from core import calc, db, dieta, foods, i18n, nutrients
+from core import condicoes as condicoes_mod
 from core import sugestoes as sugestoes_mod
 from views import tema
 
 _t = i18n.t
 
 
-def _media_7_dias(uid) -> tuple[dict, int]:
-    """Média diária de nutrientes nos últimos 7 dias COM refeições registadas."""
+def _media_periodo(uid, dias: int) -> tuple[dict, int]:
+    """Média diária de nutrientes nos últimos `dias` dias COM refeições registadas."""
     somas: dict[str, float] = {}
     dias_com_dados = 0
-    for i in range(7):
+    for i in range(dias):
         dia = (date.today() - timedelta(days=i)).strftime("%Y-%m-%d")
         if db.tem_refeicoes(uid, dia):
             dias_com_dados += 1
@@ -24,6 +27,10 @@ def _media_7_dias(uid) -> tuple[dict, int]:
     if dias_com_dados == 0:
         return {}, 0
     return {k: v / dias_com_dados for k, v in somas.items()}, dias_com_dados
+
+
+def _media_7_dias(uid) -> tuple[dict, int]:
+    return _media_periodo(uid, 7)
 
 
 def _sugestoes(em_falta: list, medias: dict, alergias: list, preferencias: list,
@@ -112,6 +119,63 @@ def mostrar():
                                 f"✅ Nutrients on track ({len(ok)})")):
                 for chave, fracao, alvo in ok:
                     st.markdown(f"🟢 **{nutrients.nome_de(chave)}** — {min(fracao, 1.0):.0%}")
+
+    # ---- Tendências a 30 dias ----
+    medias30, dias30 = _media_periodo(uid, 30)
+    if dias30 >= 5:
+        st.divider()
+        st.subheader(_t("📉 Tendências a 30 dias", "📉 30-day trends"))
+        st.caption(_t(f"Média de **{dias30} dia(s)** com registos no último mês — mostra o que "
+                      "anda *sempre* em falta ou em excesso, para lá de um dia mau.",
+                      f"Average of **{dias30} day(s)** with logs in the last month — shows what "
+                      "is *consistently* lacking or excessive, beyond one bad day."))
+        linhas = []
+        for chave in chaves:
+            alvo = nutrients.alvo_nutriente(chave, perfil["sexo"], alvos)
+            if alvo:
+                linhas.append({"nutriente": nutrients.nome_de(chave),
+                               "cobertura": min(medias30.get(chave, 0) / alvo, 1.5)})
+        if linhas:
+            df = pd.DataFrame(linhas)
+            df["estado"] = df["cobertura"].map(
+                lambda f: "#D9534F" if f < 0.7 else ("#E8C220" if f < 0.9 else "#5B8C5A"))
+            grafico = alt.Chart(df).mark_bar().encode(
+                y=alt.Y("nutriente:N", sort=None, title=None),
+                x=alt.X("cobertura:Q", title=_t("fração do alvo (média 30 dias)",
+                                                "fraction of target (30-day avg)"),
+                        axis=alt.Axis(format="%"), scale=alt.Scale(domain=[0, 1.5])),
+                color=alt.Color("estado:N", scale=None),
+                tooltip=[alt.Tooltip("nutriente:N"),
+                         alt.Tooltip("cobertura:Q", format=".0%")])
+            regra = alt.Chart(pd.DataFrame({"x": [1.0]})).mark_rule(
+                strokeDash=[4, 3], color="#6b7a5e").encode(x="x:Q")
+            st.altair_chart((grafico + regra).properties(height=max(220, 18 * len(linhas))),
+                            use_container_width=True)
+
+        cronicos_falta = [(c, medias30.get(c, 0) / nutrients.alvo_nutriente(c, perfil["sexo"], alvos))
+                          for c in chaves
+                          if nutrients.alvo_nutriente(c, perfil["sexo"], alvos)
+                          and medias30.get(c, 0) / nutrients.alvo_nutriente(c, perfil["sexo"], alvos) < 0.7]
+        efetivos = condicoes_mod.limites_efetivos(perfil.get("condicoes", []))
+        cronicos_excesso = [(c, medias30.get(c, 0), info["limite"], info["por_condicao"])
+                            for c, info in efetivos.items()
+                            if medias30.get(c, 0) > info["limite"]]
+        if cronicos_falta:
+            st.markdown("**" + _t("🔴 Em falta crónica (média <70% do alvo):",
+                                  "🔴 Chronically lacking (average <70% of target):") + "** "
+                        + " · ".join(f"{nutrients.nome_de(c)} ({f:.0%})"
+                                     for c, f in sorted(cronicos_falta, key=lambda x: x[1])))
+        if cronicos_excesso:
+            for c, m, lim, cond in cronicos_excesso:
+                extra = (" — " + _t(f"limite da tua condição ({condicoes_mod.nome(cond).lower()})",
+                                    f"your condition's limit ({condicoes_mod.nome(cond).lower()})")
+                         if cond else "")
+                st.markdown(f"⚠️ **{nutrients.nome_de(c)}** " +
+                            _t("acima do limite em média", "above the limit on average") +
+                            f": {m:.0f} / {lim:.0f} {nutrients.unidade_de(c)}" + extra)
+        if not cronicos_falta and not cronicos_excesso:
+            st.success(_t("💚 Nenhuma falta ou excesso crónico no último mês — consistência exemplar!",
+                          "💚 No chronic lack or excess in the last month — great consistency!"))
 
     # ---- Explorador ----
     st.divider()
