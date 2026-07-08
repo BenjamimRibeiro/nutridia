@@ -8,7 +8,7 @@ calorias, micronutrientes, pontuações de bem-estar e peso. **Sem IA, sem chave
 
 - Correr: `.venv\Scripts\streamlit.exe run app.py` (ou duplo clique em `Iniciar NutriDia.bat`)
 - Instalar deps: `.venv\Scripts\pip install -r requirements.txt`
-- Deps: streamlit, anthropic, pillow, pandas (venv local `.venv\`)
+- Deps: streamlit, pandas, SQLAlchemy, psycopg2-binary, pillow, zxing-cpp (venv local `.venv\`)
 
 ## Arquitetura
 
@@ -57,6 +57,29 @@ calorias, micronutrientes, pontuações de bem-estar e peso. **Sem IA, sem chave
   `Colesterol alto`→gordura saturada, cada uma com um limite mais apertado que o geral e conselho.
   Guardadas em `perfis.condicoes` (JSON); seletor no Perfil (ao lado das alergias). O Painel mostra
   um aviso diário por condição (dentro/acima do limite) com AVISO de que não é conselho médico.
+  `limites_efetivos(condicoes)` funde LIMITES gerais com os das condições; `semaforo_refeicao(totais,
+  condicoes)` avalia uma refeição (🟢 ≤25% · 🟡 ≤50% · 🔴 >50% do limite diário) — render em
+  `builder.semaforo`, usado no Registar por baixo das métricas do cesto.
+- `sugestoes.fator_condicoes(nut_porcao, condicoes)` — multiplicador 0..1 (None = excluir se a
+  porção gasta >35% do limite diário de uma condição). Aplicado em para_agora/para_carencia/treats
+  e nas sugestões + lista de compras de Carências e no plano semanal.
+- `core/plano.py` — plano semanal: `gerar(perfil, alvos, semente)` monta 7 dias × 4 momentos a
+  partir de slots de categorias, escala porções ao alvo (máx. 2×) e reforça dias leves com snacks
+  (~90-100% das kcal). Filtros `_NAO_PEQALMOCO` (batata/arroz/massa fora do peq-almoço/lanche) e
+  `_NAO_SOZINHO` (azeite/manteiga não são snack). Determinístico por semente. Página `views/plano.py`
+  (url `plano`) com botão regenerar (semente em `st.session_state["plano_semente"]`) e download .txt.
+- `core/barcode.py` — `ler(imagem)` descodifica códigos de barras (zxing-cpp + pillow) com fallback
+  gracioso (`DISPONIVEL=False` se faltar a lib). No builder (`_aba_off`), toggle "📸 Ler com a
+  câmara" → `st.camera_input` → `off.por_codigo`. Guard `{prefixo}_cb_lido` evita procuras repetidas.
+- Carências tem ainda: **Tendências a 30 dias** (`_media_periodo(uid, dias)`, gráfico Altair de
+  cobertura média + faltas crónicas <70% + excessos vs limites efetivos) e **Lista de compras**
+  (top alimentos das sugestões agrupados por categoria, download .txt).
+- Progresso: **Relatório 7/30 dias** — `metas.resumo_periodo(uid, perfil, alvos, n_dias)`
+  (o antigo `resumo_semanal` é wrapper de 7) devolve também `fracas` (<70% do alvo); download .md
+  via `views/metas._relatorio_md`.
+- Creatina é seguida como `creatina_g` (só nome/unidade nos helpers; NÃO está em
+  CAMPOS_NUTRIENTES/DDR/CARENCIAS para não gerar falsas carências) — o catálogo dá 5 g/dose e as
+  doses/dia escalam-na nos totais.
 - `core/dieta.py` — alergias/preferências por palavras-chave do nome; `compativel(food, alergias, prefs)`.
   Pratos compostos com carne (francesinha, lasanha…) estão na lista `_CARNE` por nome.
 - `core/sugestoes.py` — `para_carencia` e `para_agora` (filtram por `dieta.compativel`).

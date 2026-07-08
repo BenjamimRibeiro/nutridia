@@ -5,7 +5,7 @@ calculados a partir de por_100g + gramas sempre que necessário (nutrients.escal
 """
 import streamlit as st
 
-from core import condicoes, db, foods, i18n, nutrients
+from core import barcode, condicoes, db, foods, i18n, nutrients
 from core import openfoodfacts as off
 from views import components
 
@@ -139,6 +139,33 @@ def _aba_off(cesto: list, prefixo: str, pais: str) -> None:
                 st.session_state[f"{prefixo}_res"] = []
 
     with st.expander(_t("📷 Tenho o código de barras", "📷 I have the barcode")):
+        if barcode.DISPONIVEL:
+            ligar = st.toggle(_t("📸 Ler com a câmara", "📸 Scan with camera"),
+                              key=f"{prefixo}_cam_on",
+                              help=_t("Tira uma foto ao código de barras — eu leio-o e procuro "
+                                      "o produto automaticamente.",
+                                      "Take a photo of the barcode — I'll read it and look the "
+                                      "product up automatically."))
+            if ligar:
+                foto = st.camera_input(_t("Aponta ao código de barras (bem iluminado e focado)",
+                                          "Point at the barcode (well lit and in focus)"),
+                                       key=f"{prefixo}_cam")
+                if foto is not None:
+                    codigo = barcode.ler(foto)
+                    if not codigo:
+                        st.warning(_t("Não consegui ler o código 😕 — aproxima a câmara, foca e "
+                                      "tenta outra vez (ou escreve-o em baixo).",
+                                      "Couldn't read the code 😕 — move closer, focus and try "
+                                      "again (or type it below)."))
+                    elif st.session_state.get(f"{prefixo}_cb_lido") != codigo:
+                        st.session_state[f"{prefixo}_cb_lido"] = codigo
+                        try:
+                            with st.spinner(_t(f"Li **{codigo}** — a procurar…",
+                                               f"Read **{codigo}** — searching…")):
+                                st.session_state[f"{prefixo}_res"] = [off.por_codigo(codigo, pais)]
+                            st.rerun()
+                        except ValueError as e:
+                            st.error(f"📷 {codigo}: {e}")
         with st.form(f"{prefixo}_cb_form"):
             cb = st.text_input(_t("Código de barras", "Barcode"), key=f"{prefixo}_cb",
                                placeholder="Ex.: 5601234567890")
