@@ -1,7 +1,7 @@
 """Perfil — dados pessoais, peso-alvo, preferências e suplementos."""
 import streamlit as st
 
-from core import calc, db, dieta, i18n, nutrients, sol, suplementos
+from core import calc, condicoes, db, dieta, i18n, nutrients, sol, suplementos
 from views import tema
 
 _t = i18n.t
@@ -107,6 +107,14 @@ def mostrar():
         alergias = st.multiselect(_t("Alergias / intolerâncias", "Allergies / intolerances"),
                                   dieta.ALERGIAS, default=perfil.get("alergias", []),
                                   format_func=dieta.nome_alergia)
+        cond = st.multiselect(
+            _t("🩺 Condições de saúde", "🩺 Health conditions"), condicoes.LISTA,
+            default=[c for c in perfil.get("condicoes", []) if c in condicoes.LISTA],
+            format_func=condicoes.nome,
+            help=_t("Ajustam os limites a moderar e mostram avisos no Painel. "
+                    "⚕️ Não substitui aconselhamento médico.",
+                    "They tighten the limits to watch and show alerts on the Dashboard. "
+                    "⚕️ Not a substitute for medical advice."))
         restricoes = st.multiselect(_t("Preferências alimentares", "Dietary preferences"),
                                     dieta.PREFERENCIAS, default=perfil.get("restricoes", []),
                                     format_func=dieta.nome_preferencia)
@@ -124,7 +132,7 @@ def mostrar():
             help=_t("O teu corpo produz vitamina D ao apanhar sol. Conta todos os dias.",
                     "Your body makes vitamin D from sun. Counts every day."))
         if st.form_submit_button(_t("💾 Guardar preferências", "💾 Save preferences"), type="primary"):
-            db.guardar_preferencias(uid, restricoes, alergias, sup, sol_nivel)
+            db.guardar_preferencias(uid, restricoes, alergias, sup, sol_nivel, condicoes=cond)
             st.success(_t("Guardado!", "Saved!"))
             st.rerun()
 

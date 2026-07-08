@@ -5,8 +5,8 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from core import (calc, db, doenca, exercicios, foods, i18n, metas, momentos, nutrients, scores,
-                  sugestoes)
+from core import (calc, condicoes, db, doenca, exercicios, foods, i18n, metas, momentos,
+                  nutrients, scores, sugestoes)
 from views import components, tema
 
 _t = i18n.t
@@ -152,6 +152,27 @@ def mostrar():
                           "Today the app won't push you on your goals — recover gently. "
                           "⚕️ This is food comfort, not medical advice; if it persists, "
                           "see a doctor."))
+
+    # ---- Condições de saúde (patologias) ----
+    if perfil.get("condicoes"):
+        with st.container(border=True):
+            st.markdown("**" + _t("🩺 As tuas condições de saúde — hoje",
+                                  "🩺 Your health conditions — today") + "**")
+            for c in perfil["condicoes"]:
+                if c not in condicoes.CONDICOES:
+                    continue
+                chave = condicoes.nutriente(c)
+                lim = condicoes.limite(c)
+                consumido = totais.get(chave, 0)
+                icone = "✅" if consumido <= lim else "⚠️"
+                st.markdown(f"{condicoes.emoji(c)} **{condicoes.nome(c)}** — {icone} "
+                            f"{nutrients.nome_de(chave)}: {consumido:.0f} / {lim:.0f} "
+                            f"{nutrients.unidade_de(chave)}")
+                st.caption(condicoes.conselho(c))
+            st.caption(_t("⚕️ Limites orientativos para te ajudar a moderar — **não substituem "
+                          "aconselhamento médico**. Segue sempre as indicações do teu médico.",
+                          "⚕️ Guideline limits to help you moderate — **not a substitute for "
+                          "medical advice**. Always follow your doctor's guidance."))
 
     # ---- Sequência (streak) ----
     seq = metas.sequencia_atual(uid, alvos)

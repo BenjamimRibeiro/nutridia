@@ -39,6 +39,7 @@ perfis = Table(
     Column("peso_alvo_kg", Float),
     Column("restricoes", Text), Column("alergias", Text), Column("suplementos", Text),
     Column("sol_habitual", Text), Column("suplementos_doses", Text),
+    Column("condicoes", Text),
 )
 refeicoes = Table(
     "refeicoes", metadata,
@@ -137,7 +138,7 @@ def _migrar(engine) -> None:
         if "momento" not in cols_r:
             con.execute(text("ALTER TABLE refeicoes ADD COLUMN momento VARCHAR(30)"))
         for coluna in ("restricoes", "alergias", "suplementos", "sol_habitual",
-                       "suplementos_doses"):
+                       "suplementos_doses", "condicoes"):
             if coluna not in cols_p:
                 con.execute(text(f"ALTER TABLE perfis ADD COLUMN {coluna} TEXT"))
 
@@ -220,14 +221,15 @@ def obter_perfil(uid) -> dict | None:
     if not linha:
         return None
     d = dict(linha)
-    for campo in ("restricoes", "alergias", "suplementos"):
+    for campo in ("restricoes", "alergias", "suplementos", "condicoes"):
         d[campo] = json.loads(d[campo]) if d.get(campo) else []
     d["suplementos_doses"] = json.loads(d["suplementos_doses"]) if d.get("suplementos_doses") else {}
     return d
 
 
 def guardar_preferencias(uid, restricoes: list, alergias: list, suplementos: list,
-                         sol_habitual: str | None = None, doses: dict | None = None) -> None:
+                         sol_habitual: str | None = None, doses: dict | None = None,
+                         condicoes: list | None = None) -> None:
     valores = dict(
         restricoes=json.dumps(restricoes, ensure_ascii=False),
         alergias=json.dumps(alergias, ensure_ascii=False),
@@ -235,6 +237,8 @@ def guardar_preferencias(uid, restricoes: list, alergias: list, suplementos: lis
         sol_habitual=sol_habitual)
     if doses is not None:  # None = não mexer nas doses já guardadas
         valores["suplementos_doses"] = json.dumps(doses, ensure_ascii=False)
+    if condicoes is not None:  # None = não mexer nas condições já guardadas
+        valores["condicoes"] = json.dumps(condicoes, ensure_ascii=False)
     with _engine().begin() as con:
         con.execute(update(perfis).where(perfis.c.utilizador_id == uid).values(**valores))
 
