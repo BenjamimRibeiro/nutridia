@@ -206,7 +206,8 @@ def mostrar():
     # ---- Sugestão inteligente: o que comer a seguir ----
     if estado["estado"] != "Doente":
         sug = sugestoes.para_agora(totais, alvos_aj, perfil["sexo"],
-                                   perfil.get("alergias", []), perfil.get("restricoes", []))
+                                   perfil.get("alergias", []), perfil.get("restricoes", []),
+                                   condicoes_ativas=perfil.get("condicoes", []))
         if sug["saudaveis"] or sug["treat"]:
             with st.expander(_t("🤖 Sugestão: o que comer a seguir", "🤖 Suggestion: what to eat next"),
                              expanded=False):

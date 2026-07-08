@@ -5,6 +5,7 @@ from datetime import date, timedelta
 import streamlit as st
 
 from core import calc, db, dieta, foods, i18n, nutrients
+from core import sugestoes as sugestoes_mod
 from views import tema
 
 _t = i18n.t
@@ -25,7 +26,8 @@ def _media_7_dias(uid) -> tuple[dict, int]:
     return {k: v / dias_com_dados for k, v in somas.items()}, dias_com_dados
 
 
-def _sugestoes(em_falta: list, medias: dict, alergias: list, preferencias: list) -> list:
+def _sugestoes(em_falta: list, medias: dict, alergias: list, preferencias: list,
+               condicoes_ativas: list | None = None) -> list:
     """Alimentos compatíveis ordenados por quanto repõem dos nutrientes em falta.
 
     Devolve [(pontuacao, alimento, rotulo_porcao, gramas, {nutriente: fracao_do_gap})]."""
@@ -36,6 +38,9 @@ def _sugestoes(em_falta: list, medias: dict, alergias: list, preferencias: list)
             continue
         rotulo, gramas = alimento["porcoes"][0]
         nut = nutrients.escalar(alimento["por_100g"], gramas)
+        fator = sugestoes_mod.fator_condicoes(nut, condicoes_ativas)
+        if fator is None:  # rebenta o limite de uma condição de saúde → fora
+            continue
         cobertura = {}
         for chave, falta in gaps.items():
             if falta > 0 and nut.get(chave, 0) > 0:
@@ -43,7 +48,7 @@ def _sugestoes(em_falta: list, medias: dict, alergias: list, preferencias: list)
                 if fracao >= 0.10:  # só conta se repuser pelo menos 10% do que falta
                     cobertura[chave] = fracao
         if cobertura:
-            pontuados.append((sum(cobertura.values()), alimento, rotulo, gramas, cobertura))
+            pontuados.append((sum(cobertura.values()) * fator, alimento, rotulo, gramas, cobertura))
     pontuados.sort(key=lambda x: -x[0])
     return pontuados
 
@@ -138,10 +143,12 @@ def mostrar():
                       "Foods from the table that best top up your missing nutrients "
                       "(typical portion; % = how much of that daily gap is covered)."))
         sugestoes = _sugestoes(em_falta, medias, perfil.get("alergias", []),
-                               perfil.get("restricoes", []))
-        if perfil.get("alergias") or perfil.get("restricoes"):
-            st.caption(_t("✅ As sugestões respeitam as tuas alergias e preferências (no Perfil).",
-                          "✅ Suggestions respect your allergies and preferences (in Profile)."))
+                               perfil.get("restricoes", []), perfil.get("condicoes", []))
+        if perfil.get("alergias") or perfil.get("restricoes") or perfil.get("condicoes"):
+            st.caption(_t("✅ As sugestões respeitam as tuas alergias, preferências e condições "
+                          "de saúde (no Perfil).",
+                          "✅ Suggestions respect your allergies, preferences and health "
+                          "conditions (in Profile)."))
         if not sugestoes:
             st.caption(_t("Sem sugestões claras na tabela de alimentos para estas carências.",
                           "No clear suggestions in the food table for these deficiencies."))

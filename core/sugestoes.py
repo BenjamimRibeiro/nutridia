@@ -1,8 +1,8 @@
 """Refeições inteligentes — sugestões de alimentos para tapar carências ou
-preencher o que falta hoje, respeitando alergias e preferências."""
+preencher o que falta hoje, respeitando alergias, preferências e condições de saúde."""
 import random
 
-from core import dieta, foods, nutrients
+from core import condicoes, dieta, foods, nutrients
 
 _TREAT = "Doces e snacks"
 
@@ -15,22 +15,44 @@ def _porcao(alimento: dict) -> tuple[str, int]:
     return alimento["porcoes"][0]
 
 
+def fator_condicoes(nut_porcao: dict, condicoes_ativas: list[str] | None) -> float | None:
+    """Multiplicador 0..1 pela «amigabilidade» da porção às condições do utilizador.
+
+    Só olha aos nutrientes apertados por condições ativas. None = excluir (a porção
+    gasta >35% do limite diário dessa condição); senão penaliza proporcionalmente."""
+    if not condicoes_ativas:
+        return 1.0
+    fator = 1.0
+    for info in condicoes.limites_efetivos(condicoes_ativas).values():
+        if not info["por_condicao"]:
+            continue
+        chave = condicoes.nutriente(info["por_condicao"])
+        fracao = nut_porcao.get(chave, 0) / info["limite"] if info["limite"] else 0
+        if fracao > 0.35:
+            return None
+        fator *= 1.0 - fracao
+    return fator
+
+
 def para_carencia(chave: str, alergias: list[str], preferencias: list[str],
-                  n: int = 3) -> list[dict]:
+                  n: int = 3, condicoes_ativas: list[str] | None = None) -> list[dict]:
     """Top-N alimentos compatíveis que mais fornecem o nutriente `chave` (por porção)."""
     resultado = []
     for alimento in _compativeis(alergias, preferencias):
         rotulo, gramas = _porcao(alimento)
-        aporte = nutrients.escalar(alimento["por_100g"], gramas).get(chave, 0)
-        if aporte > 0:
+        nut = nutrients.escalar(alimento["por_100g"], gramas)
+        fator = fator_condicoes(nut, condicoes_ativas)
+        aporte = nut.get(chave, 0)
+        if aporte > 0 and fator is not None:
             resultado.append({"nome": alimento["nome"], "rotulo": rotulo,
-                              "gramas": gramas, "aporte": aporte})
+                              "gramas": gramas, "aporte": aporte * fator})
     resultado.sort(key=lambda x: x["aporte"], reverse=True)
     return resultado[:n]
 
 
 def para_agora(totais: dict, alvos: dict, sexo: str, alergias: list[str],
-               preferencias: list[str], n: int = 4) -> dict:
+               preferencias: list[str], n: int = 4,
+               condicoes_ativas: list[str] | None = None) -> dict:
     """Sugere alimentos saudáveis e variados que dão o que ainda falta hoje (não só
     proteína/calorias — também micronutrientes), mais um miminho ocasional que caiba."""
     resto_kcal = alvos["kcal"] - totais.get("kcal", 0)
@@ -56,6 +78,9 @@ def para_agora(totais: dict, alvos: dict, sexo: str, alergias: list[str],
         nut = nutrients.escalar(alimento["por_100g"], gramas)
         if not (0 < nut["kcal"] <= resto_kcal * 1.15):
             continue
+        fator = fator_condicoes(nut, condicoes_ativas)
+        if fator is None:
+            continue
         cobre, score = [], 0.0
         for c, falta in gaps.items():
             if nut.get(c, 0) > 0:
@@ -69,7 +94,7 @@ def para_agora(totais: dict, alvos: dict, sexo: str, alergias: list[str],
             cobre.sort(key=lambda x: -x[1])
             pontuados.append({"nome": alimento["nome"], "categoria": alimento["categoria"],
                               "rotulo": rotulo, "gramas": gramas, "kcal": nut["kcal"],
-                              "cobre": cobre, "score": score})
+                              "cobre": cobre, "score": score * fator})
     pontuados.sort(key=lambda x: -x["score"])
 
     # diversificar: evitar repetir categoria ou o mesmo nutriente-topo
@@ -91,9 +116,14 @@ def para_agora(totais: dict, alvos: dict, sexo: str, alergias: list[str],
     resultado["saudaveis"] = saudaveis
 
     # miminho: algo guloso compatível que caiba nas calorias que sobram
-    treats = [a for a in _compativeis(alergias, preferencias)
-              if a["categoria"] == _TREAT
-              and 0 < nutrients.escalar(a["por_100g"], a["porcoes"][0][1])["kcal"] <= resto_kcal]
+    # (e que não rebente os limites das condições de saúde)
+    treats = []
+    for a in _compativeis(alergias, preferencias):
+        if a["categoria"] != _TREAT:
+            continue
+        nut_t = nutrients.escalar(a["por_100g"], a["porcoes"][0][1])
+        if 0 < nut_t["kcal"] <= resto_kcal and fator_condicoes(nut_t, condicoes_ativas) is not None:
+            treats.append(a)
     if treats:
         a = random.choice(treats)
         rotulo, gramas = _porcao(a)
