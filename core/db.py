@@ -482,6 +482,28 @@ def agua_do_dia(uid, dia: str) -> int:
     return linha[0] if linha else 0
 
 
+# Nome do alimento de água pura (categoria Bebidas). Só ESTE conta no medidor de água
+# do Painel quando registado numa refeição — outras bebidas e a água contida na comida
+# contam nos totais/pontuações, não no medidor.
+AGUA_ALIMENTO = "Água"
+
+
+def agua_de_refeicoes(uid, dia: str) -> int:
+    """Água pura (o alimento «Água») registada em refeições nesse dia, em ml."""
+    from core import nutrients as _nut
+    total = 0.0
+    for ref in refeicoes_do_dia(uid, dia):
+        for item in ref.get("itens") or []:
+            if item.get("nome") == AGUA_ALIMENTO:
+                total += _nut.escalar(item["por_100g"], item["gramas"]).get("agua_ml", 0)
+    return round(total)
+
+
+def agua_total_do_dia(uid, dia: str) -> tuple[int, int]:
+    """(água dos botões, água registada como «Água» em refeições) — ambas enchem o medidor."""
+    return agua_do_dia(uid, dia), agua_de_refeicoes(uid, dia)
+
+
 # ---------- Peso ----------
 
 def registar_peso(uid, kg: float, dia: str | None = None) -> None:

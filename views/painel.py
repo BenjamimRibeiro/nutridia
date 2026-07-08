@@ -230,8 +230,22 @@ def mostrar():
 
     # ---- Água ----
     st.subheader(_t("💧 Água", "💧 Water"))
-    agua = db.agua_do_dia(uid, hoje)
+    agua_botoes, agua_ref = db.agua_total_do_dia(uid, hoje)
+    agua = agua_botoes + agua_ref
     st.progress(min(agua / alvos["agua_ml"], 1.0), text=f"{agua} / {alvos['agua_ml']} ml")
+    if agua_ref:
+        st.caption(_t(f"Inclui **{agua_ref} ml** de água que registaste em refeições "
+                      f"+ **{agua_botoes} ml** dos botões.",
+                      f"Includes **{agua_ref} ml** of water logged in meals "
+                      f"+ **{agua_botoes} ml** from the buttons."))
+    st.caption(_t("💡 Só a **água** (a bebida) enche este medidor — quer a registes aqui nos "
+                  "botões, quer como alimento «Água» numa refeição. Outras bebidas (café, sumo…) "
+                  "e a água contida na comida (sopa, fruta…) **não** entram no medidor, mas "
+                  "contam nas tuas **pontuações de bem-estar**.",
+                  "💡 Only **water** fills this meter — whether you log it with the buttons or "
+                  "as the «Water» food in a meal. Other drinks (coffee, juice…) and the water "
+                  "contained in food (soup, fruit…) do **not** fill the meter, but they do count "
+                  "towards your **wellbeing scores**."))
     c1, c2, c3, c4 = st.columns(4)
     if c1.button("🥤 +250 ml"):
         db.adicionar_agua(uid, 250)
