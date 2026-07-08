@@ -5,7 +5,7 @@ calculados a partir de por_100g + gramas sempre que necessário (nutrients.escal
 """
 import streamlit as st
 
-from core import db, foods, i18n, nutrients
+from core import condicoes, db, foods, i18n, nutrients
 from core import openfoodfacts as off
 from views import components
 
@@ -40,6 +40,24 @@ def totais(cesto: list) -> dict:
         for c, v in nutrients.escalar(item["por_100g"], item["gramas"]).items():
             tot[c] += v
     return tot
+
+
+def semaforo(tot: dict, condicoes_ativas: list[str] | None = None) -> None:
+    """Semáforo instantâneo da refeição nos nutrientes a moderar (açúcar/sal/…)."""
+    avaliacao = condicoes.semaforo_refeicao(tot, condicoes_ativas)
+    partes = []
+    for a in avaliacao:
+        chip = (f"{a['emoji']} {nutrients.nome_de(a['chave'])} {a['consumido']:.0f} "
+                f"{nutrients.unidade_de(a['chave'])} ({a['fracao']:.0%})")
+        if a["por_condicao"]:
+            chip += " " + _t(f"· limite da tua condição ({condicoes.nome(a['por_condicao']).lower()})",
+                             f"· your condition's limit ({condicoes.nome(a['por_condicao']).lower()})")
+        partes.append(chip)
+    st.markdown(" &nbsp; ".join(partes))
+    st.caption(_t("🚦 % = fatia do limite diário que esta refeição gasta "
+                  "(🟢 ≤25% · 🟡 ≤50% · 🔴 >50%).",
+                  "🚦 % = share of the daily limit this meal uses "
+                  "(🟢 ≤25% · 🟡 ≤50% · 🔴 >50%)."))
 
 
 def adicionar_alimento(cesto: list, prefixo: str, pais: str, uid=None) -> None:

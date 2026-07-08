@@ -63,3 +63,35 @@ def limite(c: str) -> float:
 
 def emoji(c: str) -> str:
     return CONDICOES[c]["emoji"]
+
+
+def limites_efetivos(condicoes_ativas: list[str] | None) -> dict[str, dict]:
+    """Limites diários a moderar: os gerais da app, apertados pelas condições ativas.
+
+    Devolve {chave: {"limite": float, "por_condicao": nome_da_condicao | None}}."""
+    from core import nutrients
+    efetivos = {c: {"limite": info["limite"], "por_condicao": None}
+                for c, info in nutrients.LIMITES.items()}
+    for cond in condicoes_ativas or []:
+        cfg = CONDICOES.get(cond)
+        if cfg and cfg["limite"] < efetivos[cfg["nutriente"]]["limite"]:
+            efetivos[cfg["nutriente"]] = {"limite": cfg["limite"], "por_condicao": cond}
+    return efetivos
+
+
+def semaforo_refeicao(totais: dict, condicoes_ativas: list[str] | None = None) -> list[dict]:
+    """Avalia uma refeição nos nutrientes a moderar vs limite DIÁRIO efetivo.
+
+    Cor pela fatia do limite diário que a refeição gasta: 🟢 ≤25%, 🟡 ≤50%, 🔴 >50%.
+    Devolve [{chave, emoji, consumido, limite, fracao, por_condicao}] (cafeína só se >0)."""
+    resultado = []
+    for chave, info in limites_efetivos(condicoes_ativas).items():
+        consumido = totais.get(chave, 0)
+        if chave == "cafeina_mg" and consumido <= 0:
+            continue
+        fracao = consumido / info["limite"] if info["limite"] else 0.0
+        cor = "🟢" if fracao <= 0.25 else ("🟡" if fracao <= 0.50 else "🔴")
+        resultado.append({"chave": chave, "emoji": cor, "consumido": consumido,
+                          "limite": info["limite"], "fracao": fracao,
+                          "por_condicao": info["por_condicao"]})
+    return resultado

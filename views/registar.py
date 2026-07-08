@@ -87,6 +87,7 @@ def mostrar():
     c2.metric(_t("Hidratos", "Carbs"), f"{totais['hidratos_g']:.0f} g")
     c3.metric(_t("Gordura", "Fat"), f"{totais['gordura_g']:.0f} g")
     c4.metric(_t("Fibra", "Fibre"), f"{totais['fibra_g']:.0f} g")
+    builder.semaforo(totais, perfil.get("condicoes", []) if perfil else [])
 
     st.markdown(_t("**O que esta refeição te dá no geral:**", "**What this meal gives overall:**"))
     if perfil:
