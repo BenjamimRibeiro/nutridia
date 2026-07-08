@@ -47,17 +47,18 @@ def mostrar():
                           help=_t("0,5 kg/semana é um ritmo sustentável. Acima de 0,75 é agressivo.",
                                   "0.5 kg/week is sustainable. Above 0.75 is aggressive."))
 
-        usar_alvo = st.checkbox(_t("Tenho um peso-alvo", "I have a target weight"),
-                                value=bool(perfil.get("peso_alvo_kg")))
-        peso_alvo = st.number_input(_t("Peso-alvo (kg)", "Target weight (kg)"), 30.0, 250.0,
-                                    float(perfil.get("peso_alvo_kg") or peso), step=0.5,
-                                    disabled=not usar_alvo,
-                                    help=_t("Usado na página Progresso para estimar quando o atinges.",
-                                            "Used on the Progress page to estimate when you'll reach it."))
+        peso_alvo = st.number_input(
+            _t("Peso-alvo (kg) — deixa vazio se não tiveres um",
+               "Target weight (kg) — leave empty if you don't have one"),
+            min_value=30.0, max_value=250.0,
+            value=float(perfil["peso_alvo_kg"]) if perfil.get("peso_alvo_kg") else None,
+            step=0.5, placeholder=_t("Sem peso-alvo", "No target weight"),
+            help=_t("Usado na página Progresso para estimar quando o atinges.",
+                    "Used on the Progress page to estimate when you'll reach it."))
 
         if st.form_submit_button(_t("💾 Guardar perfil", "💾 Save profile"), type="primary"):
             db.guardar_perfil(uid, sexo, idade, peso, altura, atividade, objetivo, ritmo,
-                              peso_alvo if usar_alvo else None)
+                              peso_alvo)
             st.success(_t("Perfil guardado!", "Profile saved!"))
             st.rerun()
 
