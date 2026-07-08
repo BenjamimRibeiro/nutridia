@@ -71,6 +71,14 @@ PONTUACOES = {
                       "vit_b12_ug": 1, "magnesio_mg": 2},
         "penalizadores": {"acucar_g": 2, "cafeina_mg": 1},
     },
+    "Vitalidade & Libido": {
+        "emoji": "💗",
+        "descricao": "Energia sexual, libido e equilíbrio hormonal",
+        "dica": "marisco e ostras, chocolate preto, frutos secos, abacate, ovos",
+        "beneficos": {"zinco_mg": 3, "vit_d_ug": 2, "omega3_g": 2, "magnesio_mg": 2,
+                      "vit_e_mg": 1, "folato_ug": 1},
+        "penalizadores": {"acucar_g": 2, "gordura_saturada_g": 1},
+    },
 }
 
 
@@ -125,6 +133,7 @@ _NOMES_EN = {
     "Cérebro & Foco": "Brain & Focus", "Energia": "Energy", "Descanso & Sono": "Rest & Sleep",
     "Imunidade": "Immunity", "Músculo & Recuperação": "Muscle & Recovery", "Coração": "Heart",
     "Pele & Cabelo": "Skin & Hair", "Digestão": "Digestion", "Humor": "Mood",
+    "Vitalidade & Libido": "Vitality & Libido",
 }
 _DESC_EN = {
     "Cérebro & Foco": "Concentration, memory and mental clarity",
@@ -136,6 +145,7 @@ _DESC_EN = {
     "Pele & Cabelo": "Skin, hair and nail health",
     "Digestão": "Gut transit and digestive comfort",
     "Humor": "Emotional stability and good mood",
+    "Vitalidade & Libido": "Sexual energy, libido and hormonal balance",
 }
 _DICA_EN = {
     "Cérebro & Foco": "salmon and sardines, walnuts, eggs, spinach, legumes",
@@ -147,6 +157,7 @@ _DICA_EN = {
     "Pele & Cabelo": "carrot, avocado, almonds, citrus and plenty of water",
     "Digestão": "oats, legumes, fruit with skin, vegetables and plenty of water",
     "Humor": "oily fish, banana, spinach, dark chocolate, legumes",
+    "Vitalidade & Libido": "shellfish and oysters, dark chocolate, nuts, avocado, eggs",
 }
 
 
