@@ -85,14 +85,14 @@ def _medias_n_dias(uid, n: int) -> tuple[dict, int]:
     return ({k: v / dias for k, v in somas.items()} if dias else {}), dias
 
 
-def resumo_semanal(uid, perfil: dict, alvos: dict) -> dict:
-    """Boletim dos últimos 7 dias: médias, dias no alvo/saudáveis, pontuações e
+def resumo_periodo(uid, perfil: dict, alvos: dict, n_dias: int = 7) -> dict:
+    """Boletim dos últimos `n_dias` dias: médias, dias no alvo/saudáveis, pontuações e
     o nutriente mais forte / a melhorar."""
     sexo = perfil["sexo"]
-    medias, dias = _medias_n_dias(uid, 7)
+    medias, dias = _medias_n_dias(uid, n_dias)
     no_alvo = saudaveis = n_pont = 0
     pont_acc: dict[str, float] = {}
-    for i in range(7):
+    for i in range(n_dias):
         d = (date.today() - timedelta(days=i)).strftime("%Y-%m-%d")
         if not db.tem_refeicoes(uid, d):
             continue
@@ -118,7 +118,12 @@ def resumo_semanal(uid, perfil: dict, alvos: dict) -> dict:
         "pontuacoes": {k: round(v / n_pont) for k, v in pont_acc.items()} if n_pont else {},
         "melhor": max(coberturas, key=lambda x: x[1]) if coberturas else None,
         "pior": min(coberturas, key=lambda x: x[1]) if coberturas else None,
+        "fracas": sorted([(c, f) for c, f in coberturas if f < 0.7], key=lambda x: x[1]),
     }
+
+
+def resumo_semanal(uid, perfil: dict, alvos: dict) -> dict:
+    return resumo_periodo(uid, perfil, alvos, 7)
 
 
 def desafios_semanais(uid, perfil: dict, alvos: dict) -> list[dict]:

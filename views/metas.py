@@ -9,6 +9,55 @@ from views import tema
 _t = i18n.t
 
 
+def _relatorio_md(perfil: dict, r: dict, periodo: int, historico_peso: list) -> str:
+    """Relatório do período em markdown, pronto a descarregar/partilhar."""
+    hoje = date.today().strftime("%d/%m/%Y")
+    linhas = [
+        _t(f"# 🥗 Relatório NutriDia — últimos {periodo} dias",
+           f"# 🥗 NutriDia report — last {periodo} days"),
+        _t(f"Gerado a {hoje} para {st.session_state.get('nome', 'ti')}.",
+           f"Generated on {hoje} for {st.session_state.get('nome', 'you')}."), "",
+        _t("## Registo e disciplina", "## Logging and discipline"),
+        _t(f"- Dias com registos: **{r['dias']}/{periodo}**",
+           f"- Days logged: **{r['dias']}/{periodo}**"),
+        _t(f"- Dias com calorias no alvo: **{r['no_alvo']}/{r['dias']}**",
+           f"- Days with calories on target: **{r['no_alvo']}/{r['dias']}**"),
+        _t(f"- Dias saudáveis (qualidade a sério): **{r['saudaveis']}/{r['dias']}**",
+           f"- Healthy days (real quality): **{r['saudaveis']}/{r['dias']}**"), "",
+        _t("## Médias diárias", "## Daily averages"),
+        f"- {_t('Calorias', 'Calories')}: **{r['kcal']:.0f} kcal**",
+        f"- {_t('Proteína', 'Protein')}: **{r['proteina_g']:.0f} g**",
+        f"- {_t('Fibra', 'Fibre')}: **{r['fibra_g']:.0f} g**",
+        f"- {_t('Água', 'Water')}: **{r['agua_ml']:.0f} ml**", "",
+    ]
+    if r["pontuacoes"]:
+        linhas.append(_t("## Bem-estar (média das pontuações)",
+                         "## Wellbeing (average scores)"))
+        for n, v in sorted(r["pontuacoes"].items(), key=lambda x: -x[1]):
+            linhas.append(f"- {scores.PONTUACOES[n]['emoji']} {scores.nome(n)}: **{v}%**")
+        linhas.append("")
+    if r.get("fracas"):
+        linhas.append(_t("## Nutrientes a reforçar (média <70% do alvo)",
+                         "## Nutrients to boost (average <70% of target)"))
+        for c, f in r["fracas"]:
+            linhas.append(f"- {nutrients.nome_de(c)}: {f:.0%} " + _t("do alvo", "of target"))
+        linhas.append("")
+    if historico_peso:
+        primeiro, ultimo = historico_peso[0], historico_peso[-1]
+        linhas += [_t("## Peso", "## Weight"),
+                   _t(f"- Último registo: **{ultimo['kg']:.1f} kg** ({ultimo['data']})",
+                      f"- Latest entry: **{ultimo['kg']:.1f} kg** ({ultimo['data']})"),
+                   _t(f"- Evolução desde {primeiro['data']}: "
+                      f"**{ultimo['kg'] - primeiro['kg']:+.1f} kg**",
+                      f"- Change since {primeiro['data']}: "
+                      f"**{ultimo['kg'] - primeiro['kg']:+.1f} kg**"), ""]
+    linhas.append(_t("⚕️ Estimativas informativas — não substituem aconselhamento "
+                     "médico ou nutricional.",
+                     "⚕️ Informational estimates — not a substitute for medical or "
+                     "nutritional advice."))
+    return "\n".join(linhas)
+
+
 def mostrar():
     tema.cabecalho("🎯", i18n.t("Progresso", "Progress"),
                    i18n.t("As tuas sequências, medalhas e o caminho até ao peso-alvo",
@@ -68,17 +117,20 @@ def mostrar():
             st.markdown(f"{d['emoji']} **{d['nome']}** — {d['desc']} · {marca}")
             st.progress(d["atual"] / d["alvo"])
 
-    # ---- Resumo da semana ----
+    # ---- Relatório do período ----
     st.divider()
-    st.subheader(i18n.t("📊 Resumo da semana", "📊 Week summary"))
-    r = metas.resumo_semanal(uid, perfil, alvos)
+    st.subheader(i18n.t("📊 Relatório", "📊 Report"))
+    periodo = st.radio(_t("Período", "Period"),
+                       [7, 30], horizontal=True, key="rel_periodo",
+                       format_func=lambda d: _t(f"Últimos {d} dias", f"Last {d} days"))
+    r = metas.resumo_periodo(uid, perfil, alvos, periodo)
     if r["dias"] == 0:
-        st.caption(_t("Ainda sem registos esta semana — regista refeições e o boletim aparece aqui.",
-                      "No logs yet this week — log meals and the summary will appear here."))
+        st.caption(_t("Ainda sem registos neste período — regista refeições e o boletim aparece aqui.",
+                      "No logs in this period yet — log meals and the summary will appear here."))
     else:
         do_alvo = _t("do alvo", "of target")
         c1, c2, c3 = st.columns(3)
-        c1.metric(_t("Dias registados", "Days logged"), f"{r['dias']}/7")
+        c1.metric(_t("Dias registados", "Days logged"), f"{r['dias']}/{periodo}")
         c2.metric(_t("🔥 Dias no alvo", "🔥 Days on target"), f"{r['no_alvo']}/{r['dias']}")
         c3.metric(_t("🥗 Dias saudáveis", "🥗 Healthy days"), f"{r['saudaveis']}/{r['dias']}")
         c1, c2, c3 = st.columns(3)
@@ -103,6 +155,12 @@ def mostrar():
                           f"{scores.PONTUACOES[baixo[0]]['emoji']} {scores.nome(baixo[0])} ({baixo[1]}%).",
                           f"The area needing most attention: "
                           f"{scores.PONTUACOES[baixo[0]]['emoji']} {scores.nome(baixo[0])} ({baixo[1]}%)."))
+
+        st.download_button(
+            _t("⬇️ Descarregar relatório (.md)", "⬇️ Download report (.md)"),
+            _relatorio_md(perfil, r, periodo, db.historico_peso(uid)),
+            file_name=f"relatorio_nutridia_{periodo}dias_{date.today().strftime('%Y-%m-%d')}.md",
+            mime="text/markdown")
 
     # ---- Medalhas ----
     st.subheader(_t("🏅 Medalhas", "🏅 Medals"))
