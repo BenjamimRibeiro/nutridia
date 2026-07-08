@@ -241,6 +241,38 @@ def mostrar():
                            f"💡 **Meal idea:** {nomes} — together they top up ≥70% of "
                            f"**{bem_repostos} of {len(em_falta)}** missing nutrients."))
 
+    # ---- Lista de compras ----
+    if em_falta:
+        st.divider()
+        st.subheader(_t("🛒 Lista de compras", "🛒 Shopping list"))
+        st.caption(_t("Gerada a partir das tuas carências — alimentos que as repõem, agrupados "
+                      "por secção do supermercado. Respeita alergias, preferências e condições.",
+                      "Generated from your deficiencies — foods that top them up, grouped by "
+                      "supermarket section. Respects allergies, preferences and conditions."))
+        sug_lista = _sugestoes(em_falta, medias, perfil.get("alergias", []),
+                               perfil.get("restricoes", []), perfil.get("condicoes", []))
+        por_cat: dict[str, list] = {}
+        for _p, alimento, rotulo, gramas, cobertura in sug_lista[:14]:
+            melhor = max(cobertura, key=cobertura.get)
+            por_cat.setdefault(alimento["categoria"], []).append(
+                (alimento["nome"], nutrients.nome_de(melhor)))
+        if not por_cat:
+            st.caption(_t("Sem alimentos claros na tabela para estas carências.",
+                          "No clear foods in the table for these deficiencies."))
+        else:
+            linhas_txt = [_t("Lista de compras NutriDia", "NutriDia shopping list"),
+                          "=" * 30]
+            for cat in sorted(por_cat, key=nutrients.normalizar):
+                st.markdown(f"**{foods.categoria_nome(cat)}**")
+                linhas_txt.append(f"\n{foods.categoria_nome(cat)}:")
+                for nome_a, repoe in por_cat[cat]:
+                    st.markdown(f"- {foods.nome(nome_a)} " +
+                                _t(f"(repõe {repoe.lower()})", f"(tops up {repoe.lower()})"))
+                    linhas_txt.append(f"  [ ] {foods.nome(nome_a)} ({repoe})")
+            st.download_button(_t("⬇️ Descarregar lista (.txt)", "⬇️ Download list (.txt)"),
+                               "\n".join(linhas_txt), file_name="lista_compras_nutridia.txt",
+                               mime="text/plain")
+
     st.divider()
     st.caption(_t("⚕️ Esta análise é informativa e baseia-se em estimativas — não substitui "
                   "análises clínicas nem o conselho de um médico ou nutricionista.",
