@@ -46,8 +46,17 @@ calorias, micronutrientes, pontuações de bem-estar e peso. **Sem IA, sem chave
   no db; o `db.exercicio_kcal_do_dia` soma ao alvo de calorias no painel e nas metas (alvos_aj).
 - `core/suplementos.py` — `CATALOGO` (ómega-3, proteína, multivit, etc.) + `nutrientes_de(nomes)`.
   Rotina do utilizador em `perfis.suplementos` (JSON); `db.totais_do_dia` soma-os nos dias
-  ativos/hoje. `db.guardar_preferencias(uid, restricoes, alergias, suplementos)`; `obter_perfil`
-  devolve essas 3 como listas. NÃO mexer nelas no `guardar_perfil` (senão o registo de peso apaga-as).
+  ativos/hoje. `db.suplementos_nutrientes` escala cada suplemento pelas doses/dia guardadas em
+  `perfis.suplementos_doses` (JSON nome→fator, 1 por defeito; editável no Perfil). Suplementos
+  sem nutrientes seguidos (ex.: creatina) avisam que não contam nos totais.
+  `db.guardar_preferencias(uid, restricoes, alergias, suplementos, sol_habitual, doses, condicoes)`
+  — `doses`/`condicoes` a `None` NÃO mexem nessas colunas; `obter_perfil` devolve restricoes/
+  alergias/suplementos/condicoes como listas e suplementos_doses como dict. NÃO mexer nelas no
+  `guardar_perfil` (senão o registo de peso apaga-as).
+- `core/condicoes.py` — condições de saúde (patologias): `Diabetes`→açúcar, `Tensão alta`→sódio,
+  `Colesterol alto`→gordura saturada, cada uma com um limite mais apertado que o geral e conselho.
+  Guardadas em `perfis.condicoes` (JSON); seletor no Perfil (ao lado das alergias). O Painel mostra
+  um aviso diário por condição (dentro/acima do limite) com AVISO de que não é conselho médico.
 - `core/dieta.py` — alergias/preferências por palavras-chave do nome; `compativel(food, alergias, prefs)`.
   Pratos compostos com carne (francesinha, lasanha…) estão na lista `_CARNE` por nome.
 - `core/sugestoes.py` — `para_carencia` e `para_agora` (filtram por `dieta.compativel`).
@@ -60,8 +69,11 @@ calorias, micronutrientes, pontuações de bem-estar e peso. **Sem IA, sem chave
 - `core/openfoodfacts.py` — pesquisa OFF por nome (`/cgi/search.pl`) e código de barras
   (`/api/v2/product`), via `urllib` (sem dependência extra). `_MAPA` converte unidades
   OFF (g) → nossas (mg ×1000, µg ×1e6). Região (pt/br/world) na definição `off_pais`.
-- `core/scores.py` — 9 pontuações de bem-estar (0-100%) = média ponderada de coberturas
+- `core/scores.py` — 10 pontuações de bem-estar (0-100%) = média ponderada de coberturas
   dos nutrientes benéficos + penalizações por excessos. kcal pontua por proximidade ao alvo.
+  Inclui "Vitalidade & Libido" (zinco, vit D, ómega-3, magnésio, vit E, folato). Ao adicionar
+  uma pontuação, atualizar SEMPRE os 3 dicts EN (`_NOMES_EN`/`_DESC_EN`/`_DICA_EN`) senão
+  `descricao()`/`dica()` dão KeyError em inglês.
 - `core/ai.py` — **dormente** (análise por IA desligada a pedido do utilizador; ficheiro
   mantido caso se reative). Não é importado por nenhuma view.
 - `views/tema.py` — `aplicar()` injeta CSS (tema comida saudável: verdes/creme, fonte
