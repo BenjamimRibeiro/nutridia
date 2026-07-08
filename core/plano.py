@@ -11,8 +11,21 @@ _DIAS_EN = {"Segunda": "Monday", "Terça": "Tuesday", "Quarta": "Wednesday",
 
 # hidratos de "Pão e cereais" que não fazem sentido ao pequeno-almoço/lanche
 _NAO_PEQALMOCO = ["batata", "arroz", "massa", "esparguete"]
-# gorduras de tempero — não se comem sozinhas como snack
-_NAO_SOZINHO = ["azeite", "manteiga", "oleo", "banha", "margarina"]
+# ingredientes/temperos que NUNCA são prato ou snack sozinhos (removidos do pool).
+# Deteção pelo INÍCIO do nome (o item É o ingrediente) — assim "Natas (para cozinhar)"
+# sai mas "Bacalhau com natas" (prato) fica.
+_INGREDIENTE_INICIO = [
+    "natas", "azeite", "manteiga", "oleo", "banha", "margarina", "vinagre",
+    "alho", "cebola", "molho", "maionese", "ketchup", "mostarda", "pesto",
+]
+# … e alguns detetados por conterem a palavra (toppings/temperos)
+_INGREDIENTE_CONTEM = ["ralado", "bechamel"]
+
+
+def _e_ingrediente(nome: str) -> bool:
+    n = nutrients.normalizar(nome)
+    return (any(n.startswith(k) for k in _INGREDIENTE_INICIO)
+            or any(k in n for k in _INGREDIENTE_CONTEM))
 
 # (momento, emoji, fração das kcal do dia, slots de categorias — 1 alimento por slot)
 _REFEICOES = [
@@ -46,6 +59,8 @@ def _pool(perfil: dict) -> dict[str, list[dict]]:
     for a in foods.ALIMENTOS:
         if not dieta.compativel(a, alergias, prefs):
             continue
+        if _e_ingrediente(a["nome"]):
+            continue  # ingrediente/tempero — nunca é prato nem snack sozinho
         nut = nutrients.escalar(a["por_100g"], a["porcoes"][0][1])
         if sugestoes.fator_condicoes(nut, cond) is None:
             continue
@@ -77,7 +92,7 @@ def gerar(perfil: dict, alvos: dict, semente: int = 0) -> list[dict]:
                     for a in grupos.get(cat, []):
                         nome_norm = nutrients.normalizar(a["nome"])
                         if momento in ("Pequeno-almoço", "Lanche") and \
-                                any(kw in nome_norm for kw in _NAO_PEQALMOCO + _NAO_SOZINHO):
+                                any(kw in nome_norm for kw in _NAO_PEQALMOCO):
                             continue
                         rotulo, gramas = a["porcoes"][0]
                         k = nutrients.escalar(a["por_100g"], gramas)["kcal"]
@@ -111,7 +126,7 @@ def gerar(perfil: dict, alvos: dict, semente: int = 0) -> list[dict]:
                         "Fruta", "Leguminosas"):
                 for a in grupos.get(cat, []):
                     nome_norm = nutrients.normalizar(a["nome"])
-                    if any(kw in nome_norm for kw in _NAO_PEQALMOCO + _NAO_SOZINHO) \
+                    if any(kw in nome_norm for kw in _NAO_PEQALMOCO) \
                             or a["nome"] in usados_hoje:
                         continue
                     rotulo, gramas = a["porcoes"][0]
