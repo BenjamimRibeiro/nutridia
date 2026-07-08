@@ -38,7 +38,7 @@ perfis = Table(
     Column("objetivo", String(40)), Column("ritmo_kg_semana", Float),
     Column("peso_alvo_kg", Float),
     Column("restricoes", Text), Column("alergias", Text), Column("suplementos", Text),
-    Column("sol_habitual", Text),
+    Column("sol_habitual", Text), Column("suplementos_doses", Text),
 )
 refeicoes = Table(
     "refeicoes", metadata,
@@ -136,7 +136,8 @@ def _migrar(engine) -> None:
                 con.execute(text(f"ALTER TABLE utilizadores ADD COLUMN {coluna} {tipo}"))
         if "momento" not in cols_r:
             con.execute(text("ALTER TABLE refeicoes ADD COLUMN momento VARCHAR(30)"))
-        for coluna in ("restricoes", "alergias", "suplementos", "sol_habitual"):
+        for coluna in ("restricoes", "alergias", "suplementos", "sol_habitual",
+                       "suplementos_doses"):
             if coluna not in cols_p:
                 con.execute(text(f"ALTER TABLE perfis ADD COLUMN {coluna} TEXT"))
 
@@ -221,17 +222,21 @@ def obter_perfil(uid) -> dict | None:
     d = dict(linha)
     for campo in ("restricoes", "alergias", "suplementos"):
         d[campo] = json.loads(d[campo]) if d.get(campo) else []
+    d["suplementos_doses"] = json.loads(d["suplementos_doses"]) if d.get("suplementos_doses") else {}
     return d
 
 
 def guardar_preferencias(uid, restricoes: list, alergias: list, suplementos: list,
-                         sol_habitual: str | None = None) -> None:
+                         sol_habitual: str | None = None, doses: dict | None = None) -> None:
+    valores = dict(
+        restricoes=json.dumps(restricoes, ensure_ascii=False),
+        alergias=json.dumps(alergias, ensure_ascii=False),
+        suplementos=json.dumps(suplementos, ensure_ascii=False),
+        sol_habitual=sol_habitual)
+    if doses is not None:  # None = não mexer nas doses já guardadas
+        valores["suplementos_doses"] = json.dumps(doses, ensure_ascii=False)
     with _engine().begin() as con:
-        con.execute(update(perfis).where(perfis.c.utilizador_id == uid).values(
-            restricoes=json.dumps(restricoes, ensure_ascii=False),
-            alergias=json.dumps(alergias, ensure_ascii=False),
-            suplementos=json.dumps(suplementos, ensure_ascii=False),
-            sol_habitual=sol_habitual))
+        con.execute(update(perfis).where(perfis.c.utilizador_id == uid).values(**valores))
 
 
 def criar_suplemento(uid, nome: str, nutrientes: dict) -> int:
@@ -262,16 +267,19 @@ def apagar_suplemento(sup_id: int) -> None:
 
 
 def suplementos_nutrientes(uid) -> dict:
-    """Soma os nutrientes da rotina de suplementos (do catálogo + próprios)."""
+    """Soma os nutrientes da rotina de suplementos (catálogo + próprios), escalados
+    pelo número de doses/dia de cada um (1 por defeito)."""
     perfil = obter_perfil(uid)
     nomes = perfil.get("suplementos", []) if perfil else []
+    doses = perfil.get("suplementos_doses", {}) if perfil else {}
     custom = {c["nome"]: c["nutrientes"] for c in listar_suplementos_custom(uid)}
     total: dict[str, float] = {}
     for nome in nomes:
         fonte = _sup.CATALOGO.get(nome) or custom.get(nome)
         if fonte:
+            fator = float(doses.get(nome, 1) or 1)
             for chave, valor in fonte.items():
-                total[chave] = total.get(chave, 0) + valor
+                total[chave] = total.get(chave, 0) + valor * fator
     return total
 
 

@@ -128,6 +128,45 @@ def mostrar():
             st.success(_t("Guardado!", "Saved!"))
             st.rerun()
 
+    # ---- Doses e detalhes da rotina de suplementos ----
+    rotina = perfil.get("suplementos", [])
+    if rotina:
+        st.markdown("**" + _t("💊 Doses e detalhes da tua rotina",
+                              "💊 Doses and details of your routine") + "**")
+        st.caption(_t("Vê o que cada um te dá e ajusta quantas doses tomas por dia — os teus "
+                      "totais diários escalam com isso.",
+                      "See what each gives you and set how many doses you take daily — your "
+                      "daily totals scale accordingly."))
+        custom_map = {c["nome"]: c["nutrientes"] for c in db.listar_suplementos_custom(uid)}
+        doses_atuais = perfil.get("suplementos_doses", {})
+        with st.form("form_doses"):
+            novas_doses = {}
+            for nome_s in rotina:
+                fonte = suplementos.CATALOGO.get(nome_s) or custom_map.get(nome_s, {})
+                c1, c2 = st.columns([3, 1])
+                with c1:
+                    st.markdown(f"**{suplementos.nome(nome_s)}**")
+                    if fonte:
+                        st.caption(_t("Por dose: ", "Per dose: ") + " · ".join(
+                            f"{nutrients.nome_de(k)} {v:.0f} {nutrients.unidade_de(k)}"
+                            for k, v in fonte.items()))
+                    else:
+                        st.caption(_t("A app não segue nutrientes deste (ex.: a creatina não é "
+                                      "vitamina nem mineral).",
+                                      "The app doesn't track nutrients for this one (e.g. creatine "
+                                      "isn't a vitamin or mineral)."))
+                with c2:
+                    novas_doses[nome_s] = st.number_input(
+                        _t("Doses/dia", "Doses/day"), min_value=0.0, max_value=20.0,
+                        value=float(doses_atuais.get(nome_s, 1) or 1), step=0.5,
+                        key=f"dose_{nome_s}")
+            if st.form_submit_button(_t("💾 Guardar doses", "💾 Save doses"), type="primary"):
+                db.guardar_preferencias(uid, perfil.get("restricoes", []),
+                                        perfil.get("alergias", []), rotina,
+                                        perfil.get("sol_habitual"), doses=novas_doses)
+                st.success(_t("Doses guardadas!", "Doses saved!"))
+                st.rerun()
+
     # ---- Os meus suplementos (ver / editar / apagar) ----
     st.divider()
     st.subheader(_t("💊 Os meus suplementos", "💊 My supplements"))
