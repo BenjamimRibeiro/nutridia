@@ -370,6 +370,11 @@ def totais_do_dia(uid, dia: str) -> dict:
             if isinstance(valor, (int, float)):
                 totais[chave] = totais.get(chave, 0) + valor
     totais["agua_ml"] = totais.get("agua_ml", 0) + agua_do_dia(uid, dia)
+    # álcool derivado das bebidas alcoólicas registadas — só para penalizar pontuações
+    from core import alcool as _alcool
+    al = _alcool.gramas_do_dia(refs)
+    if al:
+        totais["alcool_g"] = al
     # suplementos (catálogo + próprios) e vitamina D do sol contam nos dias ativos ou hoje
     if refs or dia == date.today().strftime("%Y-%m-%d"):
         for chave, valor in suplementos_nutrientes(uid).items():

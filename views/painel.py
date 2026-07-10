@@ -5,7 +5,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from core import (calc, condicoes, db, doenca, exercicios, foods, i18n, metas, momentos,
+from core import (alcool, calc, condicoes, db, doenca, exercicios, foods, i18n, metas, momentos,
                   nutrients, scores, sugestoes)
 from views import components, tema
 
@@ -293,6 +293,13 @@ def mostrar():
         for i, (nome_key, valor) in enumerate(pontuacoes.items()):
             with colunas[i % 3]:
                 _cartao_pontuacao(nome_key, valor)
+        if totais.get("alcool_g", 0) > alcool.LIMITE_DIARIO_G:
+            st.warning(_t(f"🍺 Registaste ~**{totais['alcool_g']:.0f} g** de álcool hoje — acima "
+                          "do moderado. Penalizei algumas pontuações que o álcool prejudica "
+                          "(sono, humor, foco, recuperação…).",
+                          f"🍺 You logged ~**{totais['alcool_g']:.0f} g** of alcohol today — above "
+                          "moderate. I've penalised some scores that alcohol harms (sleep, mood, "
+                          "focus, recovery…)."))
         st.caption(_t("As pontuações sobem ao longo do dia à medida que registas refeições — "
                       "valores baixos de manhã são normais. Passa o rato por cima de um cartão "
                       "para veres o que mede.",

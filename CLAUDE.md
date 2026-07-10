@@ -96,7 +96,13 @@ calorias, micronutrientes, pontuações de bem-estar e peso. **Sem IA, sem chave
   dos nutrientes benéficos + penalizações por excessos. kcal pontua por proximidade ao alvo.
   Inclui "Vitalidade & Libido" (zinco, vit D, ómega-3, magnésio, vit E, folato). Ao adicionar
   uma pontuação, atualizar SEMPRE os 3 dicts EN (`_NOMES_EN`/`_DESC_EN`/`_DICA_EN`) senão
-  `descricao()`/`dica()` dão KeyError em inglês.
+  `descricao()`/`dica()` dão KeyError em inglês. No fim, `calcular` aplica corte multiplicativo
+  por álcool em excesso (`_ALCOOL_AFETA`: sono/humor/foco/libido/etc.).
+- `core/alcool.py` — a app NÃO segue álcool como nutriente. Deriva os g de álcool do dia das
+  bebidas alcoólicas registadas (`_ALCOOL_G_100`: cerveja/vinho; cujo `agua_ml=0` — não hidratam).
+  `db.totais_do_dia` injeta `totais["alcool_g"]` (fora de CAMPOS_NUTRIENTES, logo não é mostrado).
+  `excesso()` só passa de 0 acima de `LIMITE_DIARIO_G` (20 g ≈ 2 bebidas) → beber moderado não
+  corta pontuações. Painel avisa quando o álcool passa o limite.
 - `core/ai.py` — **dormente** (análise por IA desligada a pedido do utilizador; ficheiro
   mantido caso se reative). Não é importado por nenhuma view.
 - `views/tema.py` — `aplicar()` injeta CSS (tema comida saudável: verdes/creme, fonte

@@ -1,5 +1,21 @@
 """Pontuações diárias de bem-estar (0-100%) calculadas a partir do que comeste."""
-from core import i18n, nutrients
+from core import alcool, i18n, nutrients
+
+# Quanto o álcool EM EXCESSO corta cada pontuação (fração máxima de corte, atingida
+# quando o álcool do dia duplica o limite). Sono é o mais afetado. Só corta acima do
+# limite — beber com moderação não mexe nas pontuações.
+_ALCOOL_AFETA = {
+    "Descanso & Sono": 0.40,
+    "Humor": 0.30,
+    "Cérebro & Foco": 0.30,
+    "Vitalidade & Libido": 0.30,
+    "Energia": 0.25,
+    "Músculo & Recuperação": 0.25,
+    "Imunidade": 0.20,
+    "Coração": 0.20,
+    "Pele & Cabelo": 0.20,
+    "Digestão": 0.20,
+}
 
 # Cada pontuação combina nutrientes benéficos (peso positivo) e
 # penalizadores (excesso acima do limite baixa a nota).
@@ -115,6 +131,13 @@ def calcular(totais: dict, alvos: dict, sexo: str) -> dict[str, int]:
             soma += _penalizacao(chave, totais) * peso
             pesos += peso
         resultado[nome] = round(100 * soma / pesos) if pesos else 0
+
+    # penalização por álcool em excesso (só acima do limite diário)
+    exc = alcool.excesso(totais.get("alcool_g", 0))
+    if exc:
+        for nome, sensibilidade in _ALCOOL_AFETA.items():
+            if nome in resultado:
+                resultado[nome] = round(resultado[nome] * (1 - sensibilidade * exc))
     return resultado
 
 
