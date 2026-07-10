@@ -13,6 +13,9 @@ _t = i18n.t
 # vitaminas/minerais (exceto fibra) — para o aviso de dados em falta na OFF
 _MICROS = [c for c in nutrients.DDR if c != "fibra_g"]
 _CAT_MEUS = "⭐ Os meus"
+# peso máximo por item (g/ml). Alto o suficiente para porções grandes/múltiplas
+# (ex.: 500 ml × várias) sem rebentar os campos numéricos.
+_MAX_G = 10000.0
 
 
 def _resumo(nut: dict) -> str:
@@ -83,7 +86,8 @@ def _aba_recentes(cesto: list, prefixo: str, recentes: list) -> None:
                                            f"({recentes[i]['gramas']:.0f} g)",
                      key=f"{prefixo}_rec_sel")
     r = recentes[i]
-    gramas = st.number_input(_t("Peso (g/ml)", "Weight (g/ml)"), 1.0, 2000.0, float(r["gramas"]),
+    gramas = st.number_input(_t("Peso (g/ml)", "Weight (g/ml)"), 1.0, _MAX_G,
+                             min(float(r["gramas"]), _MAX_G),
                              step=10.0, key=f"{prefixo}_rec_g")
     st.caption(f"➡️ {gramas:.0f} g · {_resumo(nutrients.escalar(r['por_100g'], gramas))}")
     if st.button(_t("➕ Adicionar à refeição", "➕ Add to meal"), key=f"{prefixo}_rec_add", type="primary"):
@@ -104,7 +108,7 @@ def _aba_comuns(cesto: list, prefixo: str, uid) -> None:
     etiquetas = [f"{foods.porcao(lbl)} ({g} g)" for lbl, g in porcoes] + [custom]
     escolha = st.radio(_t("Porção", "Portion"), etiquetas, horizontal=True, key=f"{prefixo}_po_{cat}_{idx}")
     if escolha == custom:
-        gramas = st.number_input(_t("Peso (g/ml)", "Weight (g/ml)"), 1.0, 2000.0, 100.0, step=10.0,
+        gramas = st.number_input(_t("Peso (g/ml)", "Weight (g/ml)"), 1.0, _MAX_G, 100.0, step=10.0,
                                  key=f"{prefixo}_gc_{cat}_{idx}")
     else:
         base_g = porcoes[etiquetas.index(escolha)][1]
@@ -202,7 +206,7 @@ def _aba_off(cesto: list, prefixo: str, pais: str) -> None:
                               "vitamins/minerals on Open Food Facts. Missing ones count as 0 "
                               "— scores and deficiencies may be underestimated."))
         gramas = st.number_input(_t("Peso consumido (g/ml)", "Amount eaten (g/ml)"),
-                                 1.0, 2000.0, 100.0, step=10.0, key=f"{prefixo}_g")
+                                 1.0, _MAX_G, 100.0, step=10.0, key=f"{prefixo}_g")
         st.caption(f"➡️ {gramas:.0f} g · {_resumo(nutrients.escalar(prod['por_100g'], gramas))}")
         if st.button(_t("➕ Adicionar à refeição", "➕ Add to meal"), key=f"{prefixo}_add_off", type="primary"):
             cesto.append({"nome": prod["nome"], "gramas": float(gramas),

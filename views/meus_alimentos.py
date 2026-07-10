@@ -37,7 +37,7 @@ def mostrar():
                                                 "E.g.: Homemade protein shake"))
             gramas = st.number_input(_t("Quanto pesa 1 porção (g/ml)",
                                         "How much does 1 portion weigh (g/ml)"),
-                                     1.0, 2000.0, 100.0, step=10.0)
+                                     1.0, 10000.0, 100.0, step=10.0)
             st.markdown("**" + _t("Valores nessa porção:", "Values in that portion:") + "**")
             cols = st.columns(3)
             vals = {}
