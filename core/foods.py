@@ -321,10 +321,12 @@ ALIMENTOS = [
        folato_ug=30, agua_ml=88),
     _f("Refrigerante (cola)", "Bebidas", [("1 lata", 330)],
        kcal=42, hidratos_g=10.6, acucar_g=10.6, sodio_mg=4, cafeina_mg=10, agua_ml=89),
+    # Bebidas alcoólicas: agua_ml=0 de propósito — o álcool é diurético, logo a água
+    # que contêm NÃO hidrata (balanço ~nulo/negativo). As calorias contam na mesma.
     _f("Vinho tinto", "Bebidas", [("1 copo", 150)],
-       kcal=85, hidratos_g=2.6, acucar_g=0.6, potassio_mg=127, agua_ml=86),
+       kcal=85, hidratos_g=2.6, acucar_g=0.6, potassio_mg=127, agua_ml=0),
     _f("Cerveja", "Bebidas", [("1 imperial", 200), ("1 caneca", 330)],
-       kcal=43, proteina_g=0.5, hidratos_g=3.6, potassio_mg=27, agua_ml=92),
+       kcal=43, proteina_g=0.5, hidratos_g=3.6, potassio_mg=27, agua_ml=0),
     _f("Água", "Bebidas", [("1 copo", 200), ("1 garrafa", 500)],
        kcal=0, agua_ml=100),
 
