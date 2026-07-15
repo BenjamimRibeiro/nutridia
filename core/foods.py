@@ -23,7 +23,8 @@ def categoria_nome(cat: str) -> str:
 # Tradução de nomes GENÉRICOS (pratos/sobremesas tipicamente PT ficam sem entrada → PT)
 _NOMES_EN = {
     "Pão de forma branco": "White sliced bread", "Pão integral": "Wholegrain bread",
-    "Pão (papo-seco/carcaça)": "Bread roll", "Tosta / pão torrado": "Toast",
+    "Pão (papo-seco/carcaça)": "Bread roll", "Pão alentejano": "Alentejo bread",
+    "Tosta / pão torrado": "Toast",
     "Arroz branco cozido": "White rice (cooked)", "Massa cozida": "Pasta (cooked)",
     "Aveia (flocos)": "Oats", "Cereais de pequeno-almoço (flocos de milho)": "Breakfast cereal",
     "Batata cozida": "Boiled potato", "Batata frita (caseira)": "Fries (homemade)",
@@ -138,6 +139,9 @@ ALIMENTOS = [
     _f("Pão (papo-seco/carcaça)", "Pão e cereais", [("1 papo-seco", 50)],
        kcal=270, proteina_g=9, hidratos_g=53, gordura_g=1.5, fibra_g=3, sodio_mg=500,
        ferro_mg=2.5, magnesio_mg=30, vit_b1_mg=0.3, vit_b3_mg=3.5, folato_ug=90),
+    _f("Pão alentejano", "Pão e cereais", [("1 fatia", 50), ("2 fatias", 100)],
+       kcal=255, proteina_g=8.5, hidratos_g=53, gordura_g=1.2, fibra_g=2.8, sodio_mg=520,
+       ferro_mg=2.4, magnesio_mg=28, vit_b1_mg=0.25, vit_b3_mg=3.5, folato_ug=85),
     _f("Tosta / pão torrado", "Pão e cereais", [("1 tosta", 15)],
        kcal=410, proteina_g=12, hidratos_g=72, gordura_g=7, fibra_g=5, sodio_mg=600, ferro_mg=3),
     _f("Arroz branco cozido", "Pão e cereais", [("1 concha", 90), ("Prato", 180)],
