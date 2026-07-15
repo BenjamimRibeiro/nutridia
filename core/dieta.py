@@ -46,7 +46,8 @@ _ALERGIA_KW = {
 }
 
 # palavras que tornam um alimento incompatível com uma preferência
-_CARNE = ["frango", "peru", "vaca", "porco", "bife", "carne", "fiambre", "hamburguer", "rojoes",
+_CARNE = ["frango", "peru", "vaca", "porco", "bife", "carne", "fiambre", "salsicha", "hamburguer",
+          "rojoes",
           "bifana", "prego", "pato", "cozido", "feijoada", "alentejana", "bolonhesa",
           "jardineira", "bitoque", "caril de frango", "lombo", "canja", "rissol de carne",
           "croquete de carne", "francesinha", "lasanha"]
