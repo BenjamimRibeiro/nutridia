@@ -45,12 +45,14 @@ _ALERGIA_KW = {
 }
 
 # palavras que tornam um alimento incompatível com uma preferência
-_CARNE = ["frango", "vaca", "porco", "bife", "carne", "fiambre", "hamburguer", "rojoes",
+_CARNE = ["frango", "peru", "vaca", "porco", "bife", "carne", "fiambre", "hamburguer", "rojoes",
           "bifana", "prego", "pato", "cozido", "feijoada", "alentejana", "bolonhesa",
           "jardineira", "bitoque", "caril de frango", "lombo", "canja", "rissol de carne",
           "croquete de carne", "francesinha", "lasanha"]
 _CARNE_VERMELHA = ["vaca", "porco", "bife", "rojoes", "feijoada", "alentejana", "fiambre",
                    "hamburguer de vaca", "hamburguer de porco", "cozido"]
+# aves = carne branca — permitidas em "Sem carne vermelha" mesmo que o nome tenha "bife"
+_AVES = ["frango", "peru", "galinha", "pato"]
 _PEIXE_MARISCO = _ALERGIA_KW["Peixe"] + _ALERGIA_KW["Marisco"]
 _ANIMAL = (_CARNE + _PEIXE_MARISCO + _ALERGIA_KW["Lactose"] + ["ovo", "omelete", "mel"])
 
@@ -73,6 +75,9 @@ def motivo_incompativel(food: dict, alergias: list[str], preferencias: list[str]
         if _contem(nome, _ALERGIA_KW.get(a, [])):
             return f"contém {a.lower()}"
     for p in preferencias:
+        # aves são carne branca — não contam como carne vermelha
+        if p == "Sem carne vermelha" and _contem(nome, _AVES):
+            continue
         if _contem(nome, _PREF_KW.get(p, [])):
             return "não vegano" if p == "Vegano" else f"não {p.lower()}"
     return None
