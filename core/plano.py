@@ -33,7 +33,7 @@ _REFEICOES = [
     ("Almoço", "🍽️", 0.33, [["Sopas e pratos"], ["Vegetais", "Fruta"]]),
     ("Lanche", "🥪", 0.15, [["Lacticínios", "Fruta", "Gorduras e frutos secos",
                              "Pão e cereais"]]),
-    ("Jantar", "🌙", 0.30, [["Sopas e pratos", "Proteínas"],
+    ("Jantar", "🌙", 0.30, [["Sopas e pratos", "Carne", "Peixe"],
                             ["Vegetais", "Leguminosas"], ["Fruta"]]),
 ]
 
